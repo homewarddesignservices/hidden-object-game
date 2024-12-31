@@ -14,13 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
         {
             x: 2752,  // Second bird
             y: 764,
-            radius: 100,  // Larger radius for second bird
+            radius: 100,
             found: false
         }
     ];
 
     const imageContainer = document.getElementById('image-container');
-    const marker = document.getElementById('marker');
     const feedback = document.getElementById('feedback');
     const gameImage = document.getElementById('game-image');
     
@@ -87,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const displayWidth = gameImage.clientWidth;
         const displayHeight = gameImage.clientHeight;
         
+        // Get the exact click coordinates relative to the image
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (distance <= scaledRadius) {
                 target.found = true;
                 foundNew = true;
-                createMarker(x, y);
+                createMarker(x, y);  // Using exact click coordinates
             }
         });
 
