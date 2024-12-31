@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let holdStartTime = null;
     let progressCircle = null;
     let currentCheckPosition = null;
+    let startTimeout = null;
 
     function createProgressCircle(x, y) {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -184,27 +185,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const x = touchX || e.clientX - rect.left;
         const y = touchY || e.clientY - rect.top;
 
-        holdStartTime = Date.now();
-        progressCircle = createProgressCircle(x, y);
-        currentCheckPosition = { x, y };
-        
-        holdTimer = setInterval(() => {
-            updateProgress(holdStartTime);
+        // Clear any existing timeout
+        if (startTimeout) {
+            clearTimeout(startTimeout);
+        }
+
+        // Add a 200ms delay before starting the circle
+        startTimeout = setTimeout(() => {
+            holdStartTime = Date.now();
+            progressCircle = createProgressCircle(x, y);
+            currentCheckPosition = { x, y };
             
-            if (Date.now() - holdStartTime >= HOLD_DURATION) {
-                clearInterval(holdTimer);
-                holdTimer = null;
-                completeCheck(currentCheckPosition.x, currentCheckPosition.y);
-            }
-        }, 10);
+            holdTimer = setInterval(() => {
+                updateProgress(holdStartTime);
+                
+                if (Date.now() - holdStartTime >= HOLD_DURATION) {
+                    clearInterval(holdTimer);
+                    holdTimer = null;
+                    completeCheck(currentCheckPosition.x, currentCheckPosition.y);
+                }
+            }, 10);
+        }, 200); // 200ms delay
     }
 
     function handleEnd() {
+        // Clear the start timeout if it exists
+        if (startTimeout) {
+            clearTimeout(startTimeout);
+            startTimeout = null;
+        }
+
         if (holdTimer) {
             clearInterval(holdTimer);
             holdTimer = null;
         }
-        // Only remove progress circles that haven't completed (no pulse class)
         if (progressCircle && !progressCircle.classList.contains('pulse')) {
             progressCircle.remove();
             progressCircle = null;
