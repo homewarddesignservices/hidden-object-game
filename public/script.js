@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let holdTimer = null;
     let holdStartTime = null;
     let progressCircle = null;
+    let currentCheckPosition = null;
 
     function createProgressCircle(x, y) {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -64,16 +65,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createConfetti() {
-        // ... (keep your existing confetti code)
-    }
-
-    function createMarker(x, y) {
-        const newMarker = document.createElement('div');
-        newMarker.className = 'marker marker-found';
-        newMarker.style.left = `${x}px`;
-        newMarker.style.top = `${y}px`;
-        imageContainer.appendChild(newMarker);
-        return newMarker;
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        
+        for (let i = 0; i < 150; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = `${Math.random() * viewportWidth}px`;
+            confetti.style.top = `${viewportHeight * 0.2}px`;
+            
+            const colors = [
+                '#ff0', '#f00', '#0f0', '#0ff', '#00f', 
+                '#f0f', '#FFD700', '#C0C0C0', '#FF69B4', '#7FFF00'
+            ];
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            const size = 5 + Math.random() * 10;
+            confetti.style.width = `${size}px`;
+            confetti.style.height = `${size}px`;
+            
+            confetti.style.animation = `confetti ${1.5 + Math.random() * 3}s linear forwards`;
+            document.body.appendChild(confetti);
+            
+            setTimeout(() => {
+                confetti.remove();
+            }, 4000);
+        }
     }
 
     function checkAllFound() {
@@ -117,28 +134,43 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
     }
 
-    function completeTarget(x, y) {
-        const displayWidth = gameImage.clientWidth;
-        const displayHeight = gameImage.clientHeight;
+    function completeCheck(x, y) {
+        const isTarget = checkTarget(x, y);
         
-        targetAreas.forEach((target) => {
-            if (target.found) return;
+        if (isTarget) {
+            progressCircle.querySelector('.progress').style.stroke = '#4CAF50';
+            const displayWidth = gameImage.clientWidth;
+            const displayHeight = gameImage.clientHeight;
+            
+            targetAreas.forEach((target) => {
+                if (target.found) return;
 
-            const scaledTargetX = (target.x * displayWidth) / originalWidth;
-            const scaledTargetY = (target.y * displayHeight) / originalHeight;
-            const scaledRadius = (target.radius * displayWidth) / originalWidth;
+                const scaledTargetX = (target.x * displayWidth) / originalWidth;
+                const scaledTargetY = (target.y * displayHeight) / originalHeight;
+                const scaledRadius = (target.radius * displayWidth) / originalWidth;
 
-            const distance = Math.sqrt(
-                Math.pow(x - scaledTargetX, 2) + 
-                Math.pow(y - scaledTargetY, 2)
-            );
+                const distance = Math.sqrt(
+                    Math.pow(x - scaledTargetX, 2) + 
+                    Math.pow(y - scaledTargetY, 2)
+                );
 
-            if (distance <= scaledRadius) {
-                target.found = true;
-                createMarker(x, y);
+                if (distance <= scaledRadius) {
+                    target.found = true;
+                }
+            });
+            updateFeedback();
+        } else {
+            progressCircle.querySelector('.progress').style.stroke = '#ff0000';
+        }
+
+        // Flash effect
+        setTimeout(() => {
+            if (progressCircle) {
+                if (!isTarget) {
+                    progressCircle.remove();
+                }
             }
-        });
-        updateFeedback();
+        }, 500);
     }
 
     imageContainer.addEventListener('mousedown', (e) => {
@@ -148,20 +180,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
-        if (checkTarget(x, y)) {
-            holdStartTime = Date.now();
-            progressCircle = createProgressCircle(x, y);
+        holdStartTime = Date.now();
+        progressCircle = createProgressCircle(x, y);
+        currentCheckPosition = { x, y };
+        
+        holdTimer = setInterval(() => {
+            updateProgress(holdStartTime);
             
-            holdTimer = setInterval(() => {
-                updateProgress(holdStartTime);
-                
-                if (Date.now() - holdStartTime >= HOLD_DURATION) {
-                    clearInterval(holdTimer);
-                    progressCircle.remove();
-                    completeTarget(x, y);
-                }
-            }, 10);
-        }
+            if (Date.now() - holdStartTime >= HOLD_DURATION) {
+                clearInterval(holdTimer);
+                holdTimer = null;
+                completeCheck(currentCheckPosition.x, currentCheckPosition.y);
+            }
+        }, 10);
     });
 
     document.addEventListener('mouseup', () => {
@@ -169,10 +200,11 @@ document.addEventListener('DOMContentLoaded', () => {
             clearInterval(holdTimer);
             holdTimer = null;
         }
-        if (progressCircle) {
+        if (progressCircle && Date.now() - holdStartTime < HOLD_DURATION) {
             progressCircle.remove();
             progressCircle = null;
         }
+        currentCheckPosition = null;
     });
 
     document.addEventListener('mouseleave', () => {
@@ -184,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
             progressCircle.remove();
             progressCircle = null;
         }
+        currentCheckPosition = null;
     });
 
     // Initialize feedback
