@@ -27,11 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let progressCircle = null;
     let currentCheckPosition = null;
 
-    function cleanupAllCircles() {
-        const circles = document.querySelectorAll('.progress-circle');
-        circles.forEach(circle => circle.remove());
-    }
-
     function createProgressCircle(x, y) {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         circle.setAttribute('class', 'progress-circle');
@@ -144,6 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (isTarget) {
             progressCircle.querySelector('.progress').style.stroke = '#4CAF50';
+            progressCircle.classList.add('found-target'); // Add class to mark as found
             const displayWidth = gameImage.clientWidth;
             const displayHeight = gameImage.clientHeight;
             
@@ -208,7 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
             clearInterval(holdTimer);
             holdTimer = null;
         }
-        if (progressCircle && Date.now() - holdStartTime < HOLD_DURATION) {
+        // Only remove progress circles that haven't completed (no pulse class)
+        if (progressCircle && !progressCircle.classList.contains('pulse')) {
             progressCircle.remove();
             progressCircle = null;
         }
@@ -222,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Touch Events
     imageContainer.addEventListener('touchstart', (e) => {
-        // Only prevent default if it's a single touch
+        // Only handle single touches for the game mechanic
         if (e.touches.length === 1) {
             e.preventDefault();
             const touch = e.touches[0];
@@ -230,31 +227,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const x = touch.clientX - rect.left;
             const y = touch.clientY - rect.top;
             handleStart(e, x, y);
-        } else {
-            // If it's multiple touches (like pinch), clean up any progress circles
-            handleEnd();
-            cleanupAllCircles();
         }
     }, { passive: false });
 
-    // Add touchmove handler to detect pinch gesture
     imageContainer.addEventListener('touchmove', (e) => {
         if (e.touches.length > 1) {
-            // If multiple touches detected, end any ongoing progress and clean up
-            handleEnd();
-            cleanupAllCircles();
+            // If multiple touches detected, only clear ongoing progress
+            if (holdTimer) {
+                clearInterval(holdTimer);
+                holdTimer = null;
+            }
+            if (progressCircle && !progressCircle.classList.contains('pulse')) {
+                progressCircle.remove();
+                progressCircle = null;
+            }
         }
     });
 
     document.addEventListener('touchend', (e) => {
         handleEnd();
-        // If no touches left, clean up any stuck circles
-        if (e.touches.length === 0) {
-            cleanupAllCircles();
-        }
     });
 
-    document.addEventListener('touchcancel', handleEnd);
+    document.addEventListener('touchcancel', (e) => {
+        handleEnd();
+    });
 
     // Initialize feedback
     updateFeedback();

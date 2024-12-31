@@ -154,12 +154,12 @@ body {
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     -webkit-user-drag: none;
-    touch-action: pinch-zoom;
+    touch-action: manipulation;
 }
 
 #image-container {
     position: relative;
     display: inline-block;
     cursor: crosshair;
-    touch-action: pinch-zoom;
+    touch-action: manipulation;
 }
