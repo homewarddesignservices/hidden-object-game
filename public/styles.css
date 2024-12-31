@@ -137,3 +137,23 @@ body {
     transition: stroke-dashoffset 0.1s linear;
 }
 
+#image-container {
+    position: relative;
+    display: inline-block;
+    cursor: crosshair;
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version */
+}
+
+#game-image {
+    max-width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+    pointer-events: none;
+}

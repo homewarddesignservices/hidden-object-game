@@ -5,15 +5,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const targetAreas = [
         {
-            x: 1034,
+            x: 1034,  // First bird
             y: 1358,
             radius: 50,
             found: false
         },
         {
-            x: 2752,
+            x: 2752,  // Second bird
             y: 764,
-            radius: 100,
+            radius: 100,  // Larger radius for second bird
             found: false
         }
     ];
@@ -144,16 +144,16 @@ document.addEventListener('DOMContentLoaded', () => {
             
             targetAreas.forEach((target) => {
                 if (target.found) return;
-    
+
                 const scaledTargetX = (target.x * displayWidth) / originalWidth;
                 const scaledTargetY = (target.y * displayHeight) / originalHeight;
                 const scaledRadius = (target.radius * displayWidth) / originalWidth;
-    
+
                 const distance = Math.sqrt(
                     Math.pow(x - scaledTargetX, 2) + 
                     Math.pow(y - scaledTargetY, 2)
                 );
-    
+
                 if (distance <= scaledRadius) {
                     target.found = true;
                 }
@@ -162,10 +162,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             progressCircle.querySelector('.progress').style.stroke = '#ff0000';
         }
-    
+
         // Add pulse animation
         progressCircle.classList.add('pulse');
-    
+
         // Remove incorrect circles after animation
         if (!isTarget) {
             setTimeout(() => {
@@ -175,12 +175,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 500);
         }
     }
-    imageContainer.addEventListener('mousedown', (e) => {
+
+    function handleStart(e, touchX, touchY) {
         if (checkAllFound()) return;
 
         const rect = imageContainer.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const x = touchX || e.clientX - rect.left;
+        const y = touchY || e.clientY - rect.top;
 
         holdStartTime = Date.now();
         progressCircle = createProgressCircle(x, y);
@@ -195,9 +196,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 completeCheck(currentCheckPosition.x, currentCheckPosition.y);
             }
         }, 10);
-    });
+    }
 
-    document.addEventListener('mouseup', () => {
+    function handleEnd() {
         if (holdTimer) {
             clearInterval(holdTimer);
             holdTimer = null;
@@ -207,19 +208,25 @@ document.addEventListener('DOMContentLoaded', () => {
             progressCircle = null;
         }
         currentCheckPosition = null;
-    });
+    }
 
-    document.addEventListener('mouseleave', () => {
-        if (holdTimer) {
-            clearInterval(holdTimer);
-            holdTimer = null;
-        }
-        if (progressCircle) {
-            progressCircle.remove();
-            progressCircle = null;
-        }
-        currentCheckPosition = null;
-    });
+    // Mouse Events
+    imageContainer.addEventListener('mousedown', handleStart);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('mouseleave', handleEnd);
+
+    // Touch Events
+    imageContainer.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // Prevent default touch behavior
+        const touch = e.touches[0];
+        const rect = imageContainer.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        handleStart(e, x, y);
+    }, { passive: false });
+
+    document.addEventListener('touchend', handleEnd);
+    document.addEventListener('touchcancel', handleEnd);
 
     // Initialize feedback
     updateFeedback();
