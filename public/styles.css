@@ -9,34 +9,60 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     text-align: center;
+    -webkit-overflow-scrolling: touch;
 }
 
 #game-container {
     margin-top: 20px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.zoom-container {
+    width: 100%;
+    overflow: scroll;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
 }
 
 #image-container {
     position: relative;
     display: inline-block;
     cursor: crosshair;
+    transform-origin: 0 0;
 }
 
 #game-image {
     max-width: 100%;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    -webkit-user-drag: none;
 }
 
-.marker {
+.progress-circle {
     position: absolute;
     width: 40px;
     height: 40px;
-    border: 4px solid #4CAF50;
-    border-radius: 50%;
     transform: translate(-50%, -50%);
     pointer-events: none;
-    animation: celebrate 0.5s ease-in-out;
-    box-shadow: 0 0 20px rgba(76, 175, 80, 0.6);
+}
+
+.progress-circle circle {
+    fill: none;
+    stroke-width: 4;
+}
+
+.progress-circle .background {
+    stroke: rgba(0, 0, 0, 0.2);
+}
+
+.progress-circle .progress {
+    stroke: #4CAF50;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.1s linear;
+}
+
+.progress-circle.pulse {
+    animation: pulse 0.3s ease-in-out;
 }
 
 .hidden {
@@ -74,6 +100,7 @@ body {
     color: #2c5282;
 }
 
+/* Animations */
 @keyframes celebrate {
     0% { transform: scale(1); }
     50% { transform: scale(1.5); }
@@ -108,69 +135,4 @@ body {
     background-color: #ff0;
     pointer-events: none;
     z-index: 1000;
-}
-
-.progress-circle {
-    position: absolute;
-    width: 40px;
-    height: 40px;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-}
-
-.progress-circle.pulse {
-    animation: pulse 0.3s ease-in-out;
-}
-
-.progress-circle circle {
-    fill: none;
-    stroke-width: 4;
-}
-
-.progress-circle .background {
-    stroke: rgba(0, 0, 0, 0.2);
-}
-
-.progress-circle .progress {
-    stroke: #4CAF50;
-    stroke-linecap: round;
-    transition: stroke-dashoffset 0.1s linear;
-}
-
-#image-container {
-    position: relative;
-    display: inline-block;
-    cursor: crosshair;
-    -webkit-touch-callout: none; /* iOS Safari */
-    -webkit-user-select: none; /* Safari */
-    -khtml-user-select: none; /* Konqueror HTML */
-    -moz-user-select: none; /* Firefox */
-    -ms-user-select: none; /* Internet Explorer/Edge */
-    user-select: none; /* Non-prefixed version */
-}
-
-#game-image {
-    max-width: 100%;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    -webkit-user-drag: none;
-    touch-action: pan-x pan-y pinch-zoom;
-    user-select: none;
-}
-
-#image-container {
-    position: relative;
-    display: inline-block;
-    cursor: crosshair;
-    touch-action: pan-x pan-y pinch-zoom;
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    text-align: center;
-    touch-action: pan-x pan-y pinch-zoom;
-    -webkit-overflow-scrolling: touch;
 }

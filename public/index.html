@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=4.0, user-scalable=yes">
     <title>Hidden Object Game</title>
-    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
@@ -13,13 +13,14 @@
             Hint: Find the <span class="hint-text">two birds</span>
         </div>
         <div id="game-container">
-            <div id="image-container">
-                <img id="game-image" src="./daily-image.jpg" alt="Find the hidden object">
-                <div id="marker" class="hidden"></div>
+            <div class="zoom-container">
+                <div id="image-container">
+                    <img id="game-image" src="daily-image.jpg" alt="Find the hidden object">
+                </div>
             </div>
             <div id="feedback" class="feedback"></div>
         </div>
     </div>
-    <script src="./script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
