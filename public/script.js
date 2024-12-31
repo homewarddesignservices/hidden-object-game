@@ -27,6 +27,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let progressCircle = null;
     let currentCheckPosition = null;
 
+    function cleanupAllCircles() {
+        const circles = document.querySelectorAll('.progress-circle');
+        circles.forEach(circle => circle.remove());
+    }
+
     function createProgressCircle(x, y) {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         circle.setAttribute('class', 'progress-circle');
@@ -217,15 +222,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Touch Events
     imageContainer.addEventListener('touchstart', (e) => {
-        e.preventDefault(); // Prevent default touch behavior
-        const touch = e.touches[0];
-        const rect = imageContainer.getBoundingClientRect();
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-        handleStart(e, x, y);
+        // Only prevent default if it's a single touch
+        if (e.touches.length === 1) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = imageContainer.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            handleStart(e, x, y);
+        } else {
+            // If it's multiple touches (like pinch), clean up any progress circles
+            handleEnd();
+            cleanupAllCircles();
+        }
     }, { passive: false });
 
-    document.addEventListener('touchend', handleEnd);
+    // Add touchmove handler to detect pinch gesture
+    imageContainer.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 1) {
+            // If multiple touches detected, end any ongoing progress and clean up
+            handleEnd();
+            cleanupAllCircles();
+        }
+    });
+
+    document.addEventListener('touchend', (e) => {
+        handleEnd();
+        // If no touches left, clean up any stuck circles
+        if (e.touches.length === 0) {
+            cleanupAllCircles();
+        }
+    });
+
     document.addEventListener('touchcancel', handleEnd);
 
     // Initialize feedback
