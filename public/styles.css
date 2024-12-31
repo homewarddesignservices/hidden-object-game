@@ -91,6 +91,12 @@ body {
     }
 }
 
+@keyframes pulse {
+    0% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.3); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+}
+
 .success-animation {
     animation: celebrate 0.5s ease-in-out;
 }
@@ -112,6 +118,10 @@ body {
     pointer-events: none;
 }
 
+.progress-circle.pulse {
+    animation: pulse 0.3s ease-in-out;
+}
+
 .progress-circle circle {
     fill: none;
     stroke-width: 4;
@@ -126,3 +136,4 @@ body {
     stroke-linecap: round;
     transition: stroke-dashoffset 0.1s linear;
 }
+

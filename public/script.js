@@ -144,16 +144,16 @@ document.addEventListener('DOMContentLoaded', () => {
             
             targetAreas.forEach((target) => {
                 if (target.found) return;
-
+    
                 const scaledTargetX = (target.x * displayWidth) / originalWidth;
                 const scaledTargetY = (target.y * displayHeight) / originalHeight;
                 const scaledRadius = (target.radius * displayWidth) / originalWidth;
-
+    
                 const distance = Math.sqrt(
                     Math.pow(x - scaledTargetX, 2) + 
                     Math.pow(y - scaledTargetY, 2)
                 );
-
+    
                 if (distance <= scaledRadius) {
                     target.found = true;
                 }
@@ -162,17 +162,19 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             progressCircle.querySelector('.progress').style.stroke = '#ff0000';
         }
-
-        // Flash effect
-        setTimeout(() => {
-            if (progressCircle) {
-                if (!isTarget) {
+    
+        // Add pulse animation
+        progressCircle.classList.add('pulse');
+    
+        // Remove incorrect circles after animation
+        if (!isTarget) {
+            setTimeout(() => {
+                if (progressCircle) {
                     progressCircle.remove();
                 }
-            }
-        }, 500);
+            }, 500);
+        }
     }
-
     imageContainer.addEventListener('mousedown', (e) => {
         if (checkAllFound()) return;
 
