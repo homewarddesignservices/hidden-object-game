@@ -20,39 +20,83 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
  
+    const transform = {
+        scale: 1,
+        translateX: 0,
+        translateY: 0,
+        initialPinchDistance: 0,
+        initialPinchX: 0,
+        initialPinchY: 0
+    };
+ 
     let holdTimer = null;
     let holdStartTime = null;
     let progressCircle = null;
     let currentCheckPosition = null;
     let startTimeout = null;
- 
-    // Zoom and pan state
-    let scale = 1;
-    let translateX = 0;
-    let translateY = 0;
-    let lastZoomScale = 1;
-    let lastZoomX = 0;
-    let lastZoomY = 0;
     let isDragging = false;
-    let dragStartX = 0;
-    let dragStartY = 0;
  
     const imageContainer = document.getElementById('image-container');
     const feedback = document.getElementById('feedback');
     const gameImage = document.getElementById('game-image');
  
     function updateTransform() {
-        // Constrain zoom level
-        scale = Math.min(Math.max(scale, MIN_ZOOM), MAX_ZOOM);
+        const containerWidth = imageContainer.clientWidth;
+        const containerHeight = imageContainer.clientHeight;
+        const scaledWidth = containerWidth * transform.scale;
+        const scaledHeight = containerHeight * transform.scale;
+        
+        const maxTranslateX = Math.max(0, (scaledWidth - containerWidth) / 2);
+        const maxTranslateY = Math.max(0, (scaledHeight - containerHeight) / 2);
+        
+        transform.translateX = Math.min(maxTranslateX, Math.max(-maxTranslateX, transform.translateX));
+        transform.translateY = Math.min(maxTranslateY, Math.max(-maxTranslateY, transform.translateY));
+        
+        imageContainer.style.transform = 
+            `translate(${transform.translateX}px, ${transform.translateY}px) scale(${transform.scale})`;
+    }
  
-        // Constrain panning to keep image partially visible
-        const maxTranslateX = (scale - 1) * imageContainer.clientWidth;
-        const maxTranslateY = (scale - 1) * imageContainer.clientHeight;
+    function handlePinchStart(e) {
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const rect = imageContainer.getBoundingClientRect();
+        
+        transform.initialPinchX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
+        transform.initialPinchY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
+        transform.initialPinchDistance = Math.hypot(
+            touch2.clientX - touch1.clientX,
+            touch2.clientY - touch1.clientY
+        );
+    }
  
-        translateX = Math.min(Math.max(translateX, -maxTranslateX), maxTranslateX);
-        translateY = Math.min(Math.max(translateY, -maxTranslateY), maxTranslateY);
- 
-        imageContainer.style.transform = `scale(${scale}) translate(${translateX / scale}px, ${translateY / scale}px)`;
+    function handlePinchMove(e) {
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const rect = imageContainer.getBoundingClientRect();
+        
+        const currentPinchX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
+        const currentPinchY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
+        const currentDistance = Math.hypot(
+            touch2.clientX - touch1.clientX,
+            touch2.clientY - touch1.clientY
+        );
+        
+        const prevScale = transform.scale;
+        transform.scale = Math.min(Math.max(
+            transform.scale * (currentDistance / transform.initialPinchDistance),
+            MIN_ZOOM
+        ), MAX_ZOOM);
+        
+        const dx = currentPinchX - transform.initialPinchX;
+        const dy = currentPinchY - transform.initialPinchY;
+        
+        transform.translateX += dx - (dx * transform.scale / prevScale);
+        transform.translateY += dy - (dy * transform.scale / prevScale);
+        
+        updateTransform();
+        transform.initialPinchDistance = currentDistance;
+        transform.initialPinchX = currentPinchX;
+        transform.initialPinchY = currentPinchY;
     }
  
     function createProgressCircle(x, y) {
@@ -257,20 +301,13 @@ document.addEventListener('DOMContentLoaded', () => {
     imageContainer.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
-            const touch1 = e.touches[0];
-            const touch2 = e.touches[1];
-            const rect = imageContainer.getBoundingClientRect();
-    
-            // Calculate initial pinch center and distance
-            lastZoomScale = scale;
-            dragStartX = ((touch1.clientX + touch2.clientX) / 2) - rect.left;
-            dragStartY = ((touch1.clientY + touch2.clientY) / 2) - rect.top;
-            lastZoomX = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
-        } else if (e.touches.length === 1 && scale > 1) {
+            handlePinchStart(e);
+        } else if (e.touches.length === 1 && transform.scale > 1) {
             isDragging = true;
+            const touch = e.touches[0];
             const rect = imageContainer.getBoundingClientRect();
-            dragStartX = e.touches[0].clientX - translateX;
-            dragStartY = e.touches[0].clientY - translateY;
+            startX = touch.clientX - transform.translateX;
+            startY = touch.clientY - transform.translateY;
         } else {
             const touch = e.touches[0];
             const rect = imageContainer.getBoundingClientRect();
@@ -279,48 +316,40 @@ document.addEventListener('DOMContentLoaded', () => {
             handleStart(e, x, y);
         }
     }, { passive: false });
-    
+ 
     imageContainer.addEventListener('touchmove', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
-            const touch1 = e.touches[0];
-            const touch2 = e.touches[1];
-            const rect = imageContainer.getBoundingClientRect();
-    
-            // Calculate current pinch center and scale
-            const pinchCenterX = ((touch1.clientX + touch2.clientX) / 2) - rect.left;
-            const pinchCenterY = ((touch1.clientY + touch2.clientY) / 2) - rect.top;
-            const currentDistance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
-            
-            // Calculate new scale relative to the pinch point
-            const newScale = Math.min(Math.max(lastZoomScale * (currentDistance / lastZoomX), MIN_ZOOM), MAX_ZOOM);
-            
-            // Calculate how much we need to adjust translation to maintain pinch point
-            const scaleFactor = newScale / scale;
-            translateX = pinchCenterX - (pinchCenterX - translateX) * scaleFactor;
-            translateY = pinchCenterY - (pinchCenterY - translateY) * scaleFactor;
-            
-            scale = newScale;
-            imageContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            handlePinchMove(e);
         } else if (e.touches.length === 1 && isDragging) {
             const touch = e.touches[0];
-            translateX = touch.clientX - dragStartX;
-            translateY = touch.clientY - dragStartY;
-            imageContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            transform.translateX = touch.clientX - startX;
+            transform.translateY = touch.clientY - startY;
+            updateTransform();
         }
     }, { passive: false });
-    
+ 
     imageContainer.addEventListener('touchend', (e) => {
-        if (e.touches.length < 2) {
-            lastZoomX = 0;
-            lastZoomScale = scale;
-        }
         if (e.touches.length === 0) {
             isDragging = false;
         }
         handleEnd();
     });
  
-    // Initialize feedback
+    // Double tap to reset zoom
+    let lastTap = 0;
+    imageContainer.addEventListener('touchend', (e) => {
+        const now = Date.now();
+        if (now - lastTap < 300) {
+            if (!isDragging) {
+                transform.scale = 1;
+                transform.translateX = 0;
+                transform.translateY = 0;
+                updateTransform();
+            }
+        }
+        lastTap = now;
+    });
+ 
     updateFeedback();
  });
