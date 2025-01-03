@@ -259,15 +259,16 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const touch1 = e.touches[0];
             const touch2 = e.touches[1];
-            const midpointX = (touch1.clientX + touch2.clientX) / 2;
-            const midpointY = (touch1.clientY + touch2.clientY) / 2;
- 
+            const rect = imageContainer.getBoundingClientRect();
+    
+            // Calculate initial pinch center and distance
             lastZoomScale = scale;
-            lastZoomX = midpointX;
-            lastZoomY = midpointY;
-            isDragging = false;
+            dragStartX = ((touch1.clientX + touch2.clientX) / 2) - rect.left;
+            dragStartY = ((touch1.clientY + touch2.clientY) / 2) - rect.top;
+            lastZoomX = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
         } else if (e.touches.length === 1 && scale > 1) {
             isDragging = true;
+            const rect = imageContainer.getBoundingClientRect();
             dragStartX = e.touches[0].clientX - translateX;
             dragStartY = e.touches[0].clientY - translateY;
         } else {
@@ -278,70 +279,46 @@ document.addEventListener('DOMContentLoaded', () => {
             handleStart(e, x, y);
         }
     }, { passive: false });
- 
+    
     imageContainer.addEventListener('touchmove', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
             const touch1 = e.touches[0];
             const touch2 = e.touches[1];
             const rect = imageContainer.getBoundingClientRect();
-            
-            // Get current pinch center
+    
+            // Calculate current pinch center and scale
             const pinchCenterX = ((touch1.clientX + touch2.clientX) / 2) - rect.left;
             const pinchCenterY = ((touch1.clientY + touch2.clientY) / 2) - rect.top;
+            const currentDistance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
             
-            // Calculate new scale
-            const currentDistance = Math.hypot(
-                touch2.clientX - touch1.clientX,
-                touch2.clientY - touch1.clientY
-            );
-            const initialDistance = Math.hypot(
-                lastZoomX - touch1.clientX,
-                lastZoomY - touch1.clientY
-            );
+            // Calculate new scale relative to the pinch point
+            const newScale = Math.min(Math.max(lastZoomScale * (currentDistance / lastZoomX), MIN_ZOOM), MAX_ZOOM);
             
-            const newScale = Math.min(Math.max(lastZoomScale * (currentDistance / initialDistance), MIN_ZOOM), MAX_ZOOM);
+            // Calculate how much we need to adjust translation to maintain pinch point
+            const scaleFactor = newScale / scale;
+            translateX = pinchCenterX - (pinchCenterX - translateX) * scaleFactor;
+            translateY = pinchCenterY - (pinchCenterY - translateY) * scaleFactor;
             
-            // Adjust translation to zoom into pinch point
-            if (newScale !== scale) {
-                const dx = pinchCenterX - imageContainer.clientWidth / 2;
-                const dy = pinchCenterY - imageContainer.clientHeight / 2;
-                translateX += dx * (newScale - scale);
-                translateY += dy * (newScale - scale);
-                scale = newScale;
-            }
-            
-            updateTransform();
+            scale = newScale;
+            imageContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
         } else if (e.touches.length === 1 && isDragging) {
-            translateX = e.touches[0].clientX - dragStartX;
-            translateY = e.touches[0].clientY - dragStartY;
-            updateTransform();
+            const touch = e.touches[0];
+            translateX = touch.clientX - dragStartX;
+            translateY = touch.clientY - dragStartY;
+            imageContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
         }
     }, { passive: false });
- 
+    
     imageContainer.addEventListener('touchend', (e) => {
         if (e.touches.length < 2) {
+            lastZoomX = 0;
             lastZoomScale = scale;
         }
         if (e.touches.length === 0) {
             isDragging = false;
         }
         handleEnd();
-    });
- 
-    // Double tap to reset zoom
-    let lastTap = 0;
-    imageContainer.addEventListener('touchend', (e) => {
-        const now = Date.now();
-        if (now - lastTap < 300) {
-            if (!isDragging) {
-                scale = 1;
-                translateX = 0;
-                translateY = 0;
-                updateTransform();
-            }
-        }
-        lastTap = now;
     });
  
     // Initialize feedback
