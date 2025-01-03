@@ -284,6 +284,13 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const touch1 = e.touches[0];
             const touch2 = e.touches[1];
+            const rect = imageContainer.getBoundingClientRect();
+            
+            // Get current pinch center
+            const pinchCenterX = ((touch1.clientX + touch2.clientX) / 2) - rect.left;
+            const pinchCenterY = ((touch1.clientY + touch2.clientY) / 2) - rect.top;
+            
+            // Calculate new scale
             const currentDistance = Math.hypot(
                 touch2.clientX - touch1.clientX,
                 touch2.clientY - touch1.clientY
@@ -293,7 +300,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 lastZoomY - touch1.clientY
             );
             
-            scale = lastZoomScale * (currentDistance / initialDistance);
+            const newScale = Math.min(Math.max(lastZoomScale * (currentDistance / initialDistance), MIN_ZOOM), MAX_ZOOM);
+            
+            // Adjust translation to zoom into pinch point
+            if (newScale !== scale) {
+                const dx = pinchCenterX - imageContainer.clientWidth / 2;
+                const dy = pinchCenterY - imageContainer.clientHeight / 2;
+                translateX += dx * (newScale - scale);
+                translateY += dy * (newScale - scale);
+                scale = newScale;
+            }
+            
             updateTransform();
         } else if (e.touches.length === 1 && isDragging) {
             translateX = e.touches[0].clientX - dragStartX;
