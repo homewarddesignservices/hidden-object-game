@@ -1,68 +1,73 @@
 document.addEventListener('DOMContentLoaded', () => {
     const originalWidth = 3032;
     const originalHeight = 2021;
-    const HOLD_DURATION = 3000; // 3 seconds in milliseconds
-
+    const HOLD_DURATION = 3000;
+    const MAX_ZOOM = 4;
+    const MIN_ZOOM = 1;
+ 
     const targetAreas = [
         {
-            x: 1034,  // First bird
+            x: 1034,
             y: 1358,
             radius: 50,
             found: false
         },
         {
-            x: 2752,  // Second bird
+            x: 2752,
             y: 764,
             radius: 100,
             found: false
         }
     ];
-
-    // Zoom and pan variables
-    let currentScale = 1;
-    let lastScale = 1;
-    let startDistance = 0;
-    let isDragging = false;
-    let startX = 0;
-    let startY = 0;
-    let translateX = 0;
-    let translateY = 0;
-    let initialPinchDistance = 0;
-    let initialPinchX = 0;
-    let initialPinchY = 0;
-
-    const imageContainer = document.getElementById('image-container');
-    const feedback = document.getElementById('feedback');
-    const gameImage = document.getElementById('game-image');
-    
+ 
     let holdTimer = null;
     let holdStartTime = null;
     let progressCircle = null;
     let currentCheckPosition = null;
     let startTimeout = null;
-
-    // Helper function to get coordinates relative to container
-    function getPointFromTouch(touch) {
-        const rect = imageContainer.getBoundingClientRect();
-        return {
-            x: touch.clientX - rect.left,
-            y: touch.clientY - rect.top
-        };
+ 
+    // Zoom and pan state
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    let lastZoomScale = 1;
+    let lastZoomX = 0;
+    let lastZoomY = 0;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+ 
+    const imageContainer = document.getElementById('image-container');
+    const feedback = document.getElementById('feedback');
+    const gameImage = document.getElementById('game-image');
+ 
+    function updateTransform() {
+        // Constrain zoom level
+        scale = Math.min(Math.max(scale, MIN_ZOOM), MAX_ZOOM);
+ 
+        // Constrain panning to keep image partially visible
+        const maxTranslateX = (scale - 1) * imageContainer.clientWidth;
+        const maxTranslateY = (scale - 1) * imageContainer.clientHeight;
+ 
+        translateX = Math.min(Math.max(translateX, -maxTranslateX), maxTranslateX);
+        translateY = Math.min(Math.max(translateY, -maxTranslateY), maxTranslateY);
+ 
+        imageContainer.style.transform = `scale(${scale}) translate(${translateX / scale}px, ${translateY / scale}px)`;
     }
-
+ 
     function createProgressCircle(x, y) {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         circle.setAttribute('class', 'progress-circle');
         circle.setAttribute('viewBox', '0 0 36 36');
         circle.style.left = `${x}px`;
         circle.style.top = `${y}px`;
-
+ 
         const backgroundCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         backgroundCircle.setAttribute('class', 'background');
         backgroundCircle.setAttribute('cx', '18');
         backgroundCircle.setAttribute('cy', '18');
         backgroundCircle.setAttribute('r', '16');
-
+ 
         const progressArc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         progressArc.setAttribute('class', 'progress');
         progressArc.setAttribute('cx', '18');
@@ -70,14 +75,14 @@ document.addEventListener('DOMContentLoaded', () => {
         progressArc.setAttribute('r', '16');
         progressArc.setAttribute('stroke-dasharray', '100.53096491487338');
         progressArc.setAttribute('stroke-dashoffset', '100.53096491487338');
-
+ 
         circle.appendChild(backgroundCircle);
         circle.appendChild(progressArc);
         imageContainer.appendChild(circle);
-
+ 
         return circle;
     }
-
+ 
     function updateProgress(startTime) {
         const elapsedTime = Date.now() - startTime;
         const progress = Math.min(elapsedTime / HOLD_DURATION, 1);
@@ -86,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const offset = circumference - (progress * circumference);
         progressArc.setAttribute('stroke-dashoffset', offset);
     }
-
+ 
     function createConfetti() {
         const viewportHeight = window.innerHeight;
         const viewportWidth = window.innerWidth;
@@ -115,11 +120,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 4000);
         }
     }
-
+ 
     function checkAllFound() {
         return targetAreas.every(target => target.found);
     }
-
+ 
     function updateFeedback() {
         const foundCount = targetAreas.filter(target => target.found).length;
         const totalTargets = targetAreas.length;
@@ -133,30 +138,30 @@ document.addEventListener('DOMContentLoaded', () => {
             feedback.className = 'feedback';
         }
     }
-
+ 
     function checkTarget(x, y) {
         const displayWidth = gameImage.clientWidth;
         const displayHeight = gameImage.clientHeight;
         
         for (let target of targetAreas) {
             if (target.found) continue;
-
+ 
             const scaledTargetX = (target.x * displayWidth) / originalWidth;
             const scaledTargetY = (target.y * displayHeight) / originalHeight;
             const scaledRadius = (target.radius * displayWidth) / originalWidth;
-
+ 
             const distance = Math.sqrt(
                 Math.pow(x - scaledTargetX, 2) + 
                 Math.pow(y - scaledTargetY, 2)
             );
-
+ 
             if (distance <= scaledRadius) {
                 return true;
             }
         }
         return false;
     }
-
+ 
     function completeCheck(x, y) {
         const isTarget = checkTarget(x, y);
         
@@ -168,16 +173,16 @@ document.addEventListener('DOMContentLoaded', () => {
             
             targetAreas.forEach((target) => {
                 if (target.found) return;
-
+ 
                 const scaledTargetX = (target.x * displayWidth) / originalWidth;
                 const scaledTargetY = (target.y * displayHeight) / originalHeight;
                 const scaledRadius = (target.radius * displayWidth) / originalWidth;
-
+ 
                 const distance = Math.sqrt(
                     Math.pow(x - scaledTargetX, 2) + 
                     Math.pow(y - scaledTargetY, 2)
                 );
-
+ 
                 if (distance <= scaledRadius) {
                     target.found = true;
                 }
@@ -186,9 +191,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             progressCircle.querySelector('.progress').style.stroke = '#ff0000';
         }
-
+ 
         progressCircle.classList.add('pulse');
-
+ 
         if (!isTarget) {
             setTimeout(() => {
                 if (progressCircle) {
@@ -197,18 +202,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 500);
         }
     }
-
+ 
     function handleStart(e, touchX, touchY) {
         if (checkAllFound()) return;
-
+ 
         const rect = imageContainer.getBoundingClientRect();
         const x = touchX || e.clientX - rect.left;
         const y = touchY || e.clientY - rect.top;
-
+ 
         if (startTimeout) {
             clearTimeout(startTimeout);
         }
-
+ 
         startTimeout = setTimeout(() => {
             holdStartTime = Date.now();
             progressCircle = createProgressCircle(x, y);
@@ -225,13 +230,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 10);
         }, 200);
     }
-
+ 
     function handleEnd() {
         if (startTimeout) {
             clearTimeout(startTimeout);
             startTimeout = null;
         }
-
+ 
         if (holdTimer) {
             clearInterval(holdTimer);
             holdTimer = null;
@@ -242,34 +247,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         currentCheckPosition = null;
     }
-
+ 
     // Mouse Events
     imageContainer.addEventListener('mousedown', handleStart);
     document.addEventListener('mouseup', handleEnd);
     document.addEventListener('mouseleave', handleEnd);
-
+ 
     // Touch Events
     imageContainer.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
-            const touch1 = getPointFromTouch(e.touches[0]);
-            const touch2 = getPointFromTouch(e.touches[1]);
-            
-            // Calculate center point between the two touches
-            initialPinchX = (touch1.x + touch2.x) / 2;
-            initialPinchY = (touch1.y + touch2.y) / 2;
-            
-            initialPinchDistance = Math.hypot(
-                touch1.x - touch2.x,
-                touch1.y - touch2.y
-            );
-            
-            lastScale = currentScale;
-        } else if (e.touches.length === 1 && currentScale > 1) {
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const midpointX = (touch1.clientX + touch2.clientX) / 2;
+            const midpointY = (touch1.clientY + touch2.clientY) / 2;
+ 
+            lastZoomScale = scale;
+            lastZoomX = midpointX;
+            lastZoomY = midpointY;
+            isDragging = false;
+        } else if (e.touches.length === 1 && scale > 1) {
             isDragging = true;
-            const touch = getPointFromTouch(e.touches[0]);
-            startX = touch.x - translateX;
-            startY = touch.y - translateY;
+            dragStartX = e.touches[0].clientX - translateX;
+            dragStartY = e.touches[0].clientY - translateY;
         } else {
             const touch = e.touches[0];
             const rect = imageContainer.getBoundingClientRect();
@@ -278,67 +278,55 @@ document.addEventListener('DOMContentLoaded', () => {
             handleStart(e, x, y);
         }
     }, { passive: false });
-
+ 
     imageContainer.addEventListener('touchmove', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
-            const touch1 = getPointFromTouch(e.touches[0]);
-            const touch2 = getPointFromTouch(e.touches[1]);
-            
-            const currentPinchX = (touch1.x + touch2.x) / 2;
-            const currentPinchY = (touch1.y + touch2.y) / 2;
-            
-            const pinchDistance = Math.hypot(
-                touch1.x - touch2.x,
-                touch1.y - touch2.y
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const currentDistance = Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+            );
+            const initialDistance = Math.hypot(
+                lastZoomX - touch1.clientX,
+                lastZoomY - touch1.clientY
             );
             
-            const newScale = Math.min(Math.max(1, lastScale * (pinchDistance / initialPinchDistance)), 4);
-            
-            // Calculate the transform origin offset
-            const scaleChange = newScale - currentScale;
-            translateX += (initialPinchX - currentPinchX) * currentScale;
-            translateY += (initialPinchY - currentPinchY) * currentScale;
-            
-            currentScale = newScale;
-            
-            imageContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
+            scale = lastZoomScale * (currentDistance / initialDistance);
+            updateTransform();
         } else if (e.touches.length === 1 && isDragging) {
-            const touch = getPointFromTouch(e.touches[0]);
-            translateX = touch.x - startX;
-            translateY = touch.y - startY;
-            
-            imageContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
+            translateX = e.touches[0].clientX - dragStartX;
+            translateY = e.touches[0].clientY - dragStartY;
+            updateTransform();
         }
     }, { passive: false });
-
+ 
     imageContainer.addEventListener('touchend', (e) => {
         if (e.touches.length < 2) {
-            startDistance = 0;
-            lastScale = currentScale;
+            lastZoomScale = scale;
         }
         if (e.touches.length === 0) {
             isDragging = false;
         }
         handleEnd();
     });
-
+ 
     // Double tap to reset zoom
     let lastTap = 0;
     imageContainer.addEventListener('touchend', (e) => {
         const now = Date.now();
         if (now - lastTap < 300) {
             if (!isDragging) {
-                currentScale = 1;
-                lastScale = 1;
+                scale = 1;
                 translateX = 0;
                 translateY = 0;
-                imageContainer.style.transform = 'none';
+                updateTransform();
             }
         }
         lastTap = now;
     });
-
+ 
     // Initialize feedback
     updateFeedback();
-});
+ });
