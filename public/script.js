@@ -63,33 +63,33 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateTransform() {
         const rect = imageContainer.getBoundingClientRect();
         
-        // Ensure minimum scale fills container
-        const containerAspect = rect.width / rect.height;
+        // Ensure image always fills container
+        const containerWidth = rect.width;
+        const containerHeight = rect.height;
+        const containerAspect = containerWidth / containerHeight;
         const imageAspect = originalWidth / originalHeight;
-        const minScale = containerAspect > imageAspect 
-            ? rect.height / (originalHeight / currentScale)
-            : rect.width / (originalWidth / currentScale);
         
-        // Apply minimum scale
-        if (currentScale < minScale) {
-            currentScale = minScale;
-        }
-    
-        // Calculate maximum translations
-        const scaledWidth = rect.width * currentScale;
-        const scaledHeight = rect.height * currentScale;
-        const maxX = Math.max(0, (scaledWidth - rect.width) / 2);
-        const maxY = Math.max(0, (scaledHeight - rect.height) / 2);
-    
-        // Hard constrain translations
-        currentTransformX = Math.max(Math.min(currentTransformX, maxX), -maxX);
-        currentTransformY = Math.max(Math.min(currentTransformY, maxY), -maxY);
-    
-        const transformX = currentTransformX - (pinchStartX * (currentScale - 1));
-        const transformY = currentTransformY - (pinchStartY * (currentScale - 1));
-    
-        imageContainer.style.transform = 
-            `translate(${transformX}px, ${transformY}px) scale(${currentScale})`;
+        // Set minimum scale to ensure no white space
+        const minScaleX = containerWidth / originalWidth;
+        const minScaleY = containerHeight / originalHeight;
+        const minScale = Math.max(minScaleX, minScaleY);
+        
+        // Enforce minimum scale
+        currentScale = Math.max(currentScale, minScale);
+        
+        // Calculate boundaries to prevent white space
+        const scaledWidth = originalWidth * currentScale;
+        const scaledHeight = originalHeight * currentScale;
+        
+        // Calculate maximum allowed translation to keep image filling container
+        const maxTranslateX = (scaledWidth - containerWidth) / 2;
+        const maxTranslateY = (scaledHeight - containerHeight) / 2;
+        
+        // Constrain translation
+        currentTransformX = Math.max(Math.min(currentTransformX, maxTranslateX), -maxTranslateX);
+        currentTransformY = Math.max(Math.min(currentTransformY, maxTranslateY), -maxTranslateY);
+        
+        imageContainer.style.transform = `translate(${currentTransformX}px, ${currentTransformY}px) scale(${currentScale})`;
     }
  
     // Keep all original game functions unchanged
