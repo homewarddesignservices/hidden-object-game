@@ -47,13 +47,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const containerWidth = rect.width;
         const containerHeight = rect.height;
         
-        // Calculate boundaries based on current zoom level
-        const maxX = (currentScale - 1) * containerWidth / 2;
-        const maxY = (currentScale - 1) * containerHeight / 2;
+        // Calculate the scaled dimensions
+        const scaledWidth = containerWidth * currentScale;
+        const scaledHeight = containerHeight * currentScale;
         
-        // Constrain the pan values
-        currentTransformX = Math.min(Math.max(currentTransformX, -maxX), maxX);
-        currentTransformY = Math.min(Math.max(currentTransformY, -maxY), maxY);
+        // Calculate maximum allowed translation
+        const maxX = (scaledWidth - containerWidth) / 2;
+        const maxY = (scaledHeight - containerHeight) / 2;
+        
+        // Constrain translations
+        currentTransformX = Math.max(Math.min(currentTransformX, maxX), -maxX);
+        currentTransformY = Math.max(Math.min(currentTransformY, maxY), -maxY);
     }
  
     function updateTransform() {
