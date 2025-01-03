@@ -52,14 +52,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const scaleY = containerHeight / originalHeight;
         const minScale = Math.max(scaleX, scaleY);
         
-        // Calculate maximum boundaries based on current scale
+        // Calculate image dimensions at current scale
         const scaledWidth = originalWidth * currentScale;
         const scaledHeight = originalHeight * currentScale;
         
-        const maxX = Math.max(0, (scaledWidth - containerWidth) / 2);
-        const maxY = Math.max(0, (scaledHeight - containerHeight) / 2);
+        // Calculate maximum allowed translation
+        // This ensures at least one edge touches the container at all times
+        const maxX = Math.max(0, (scaledWidth - containerWidth)) / 2;
+        const maxY = Math.max(0, (scaledHeight - containerHeight)) / 2;
         
-        return { minScale, maxX, maxY, containerWidth, containerHeight };
+        return { 
+            minScale, 
+            maxX, 
+            maxY, 
+            containerWidth, 
+            containerHeight,
+            scaledWidth,
+            scaledHeight
+        };
     }
  
     function updateTransform() {
@@ -70,10 +80,20 @@ document.addEventListener('DOMContentLoaded', () => {
             currentScale = bounds.minScale;
         }
         
-        // Hard constrain translations to prevent white space
-        currentTransformX = Math.max(Math.min(currentTransformX, bounds.maxX), -bounds.maxX);
-        currentTransformY = Math.max(Math.min(currentTransformY, bounds.maxY), -bounds.maxY);
- 
+        // Strictly enforce boundaries
+        // If the image is smaller than container in either dimension, center it
+        if (bounds.scaledWidth <= bounds.containerWidth) {
+            currentTransformX = 0;
+        } else {
+            currentTransformX = Math.max(Math.min(currentTransformX, bounds.maxX), -bounds.maxX);
+        }
+        
+        if (bounds.scaledHeight <= bounds.containerHeight) {
+            currentTransformY = 0;
+        } else {
+            currentTransformY = Math.max(Math.min(currentTransformY, bounds.maxY), -bounds.maxY);
+        }
+    
         imageContainer.style.transform = 
             `translate(${currentTransformX}px, ${currentTransformY}px) scale(${currentScale})`;
     }
