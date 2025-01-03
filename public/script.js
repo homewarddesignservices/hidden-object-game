@@ -20,84 +20,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
  
-    const transform = {
-        scale: 1,
-        translateX: 0,
-        translateY: 0,
-        initialPinchDistance: 0,
-        initialPinchX: 0,
-        initialPinchY: 0
-    };
- 
     let holdTimer = null;
     let holdStartTime = null;
     let progressCircle = null;
     let currentCheckPosition = null;
     let startTimeout = null;
+ 
+    // Zoom and pan state
+    let initialScale = 1;
+    let currentScale = 1;
+    let initialDistance = 0;
+    let currentTransformX = 0;
+    let currentTransformY = 0;
+    let lastX = 0;
+    let lastY = 0;
     let isDragging = false;
  
     const imageContainer = document.getElementById('image-container');
     const feedback = document.getElementById('feedback');
     const gameImage = document.getElementById('game-image');
- 
-    function updateTransform() {
-        const containerWidth = imageContainer.clientWidth;
-        const containerHeight = imageContainer.clientHeight;
-        const scaledWidth = containerWidth * transform.scale;
-        const scaledHeight = containerHeight * transform.scale;
-        
-        const maxTranslateX = Math.max(0, (scaledWidth - containerWidth) / 2);
-        const maxTranslateY = Math.max(0, (scaledHeight - containerHeight) / 2);
-        
-        transform.translateX = Math.min(maxTranslateX, Math.max(-maxTranslateX, transform.translateX));
-        transform.translateY = Math.min(maxTranslateY, Math.max(-maxTranslateY, transform.translateY));
-        
-        imageContainer.style.transform = 
-            `translate(${transform.translateX}px, ${transform.translateY}px) scale(${transform.scale})`;
-    }
- 
-    function handlePinchStart(e) {
-        const touch1 = e.touches[0];
-        const touch2 = e.touches[1];
-        const rect = imageContainer.getBoundingClientRect();
-        
-        transform.initialPinchX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
-        transform.initialPinchY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
-        transform.initialPinchDistance = Math.hypot(
-            touch2.clientX - touch1.clientX,
-            touch2.clientY - touch1.clientY
-        );
-    }
- 
-    function handlePinchMove(e) {
-        const touch1 = e.touches[0];
-        const touch2 = e.touches[1];
-        const rect = imageContainer.getBoundingClientRect();
-        
-        const currentPinchX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
-        const currentPinchY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
-        const currentDistance = Math.hypot(
-            touch2.clientX - touch1.clientX,
-            touch2.clientY - touch1.clientY
-        );
-        
-        const prevScale = transform.scale;
-        transform.scale = Math.min(Math.max(
-            transform.scale * (currentDistance / transform.initialPinchDistance),
-            MIN_ZOOM
-        ), MAX_ZOOM);
-        
-        const dx = currentPinchX - transform.initialPinchX;
-        const dy = currentPinchY - transform.initialPinchY;
-        
-        transform.translateX += dx - (dx * transform.scale / prevScale);
-        transform.translateY += dy - (dy * transform.scale / prevScale);
-        
-        updateTransform();
-        transform.initialPinchDistance = currentDistance;
-        transform.initialPinchX = currentPinchX;
-        transform.initialPinchY = currentPinchY;
-    }
  
     function createProgressCircle(x, y) {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -301,13 +242,21 @@ document.addEventListener('DOMContentLoaded', () => {
     imageContainer.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
-            handlePinchStart(e);
-        } else if (e.touches.length === 1 && transform.scale > 1) {
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            
+            initialDistance = Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+            );
+            initialScale = currentScale;
+            
+            lastX = (touch1.clientX + touch2.clientX) / 2;
+            lastY = (touch1.clientY + touch2.clientY) / 2;
+        } else if (e.touches.length === 1 && currentScale > 1) {
             isDragging = true;
-            const touch = e.touches[0];
-            const rect = imageContainer.getBoundingClientRect();
-            startX = touch.clientX - transform.translateX;
-            startY = touch.clientY - transform.translateY;
+            lastX = e.touches[0].clientX - currentTransformX;
+            lastY = e.touches[0].clientY - currentTransformY;
         } else {
             const touch = e.touches[0];
             const rect = imageContainer.getBoundingClientRect();
@@ -320,12 +269,30 @@ document.addEventListener('DOMContentLoaded', () => {
     imageContainer.addEventListener('touchmove', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
-            handlePinchMove(e);
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            
+            const distance = Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+            );
+            currentScale = Math.min(Math.max(initialScale * (distance / initialDistance), 1), 4);
+            
+            const midX = (touch1.clientX + touch2.clientX) / 2;
+            const midY = (touch1.clientY + touch2.clientY) / 2;
+            
+            currentTransformX += midX - lastX;
+            currentTransformY += midY - lastY;
+            lastX = midX;
+            lastY = midY;
+            
+            imageContainer.style.transformOrigin = '0 0';
+            imageContainer.style.transform = `translate(${currentTransformX}px, ${currentTransformY}px) scale(${currentScale})`;
         } else if (e.touches.length === 1 && isDragging) {
             const touch = e.touches[0];
-            transform.translateX = touch.clientX - startX;
-            transform.translateY = touch.clientY - startY;
-            updateTransform();
+            currentTransformX = touch.clientX - lastX;
+            currentTransformY = touch.clientY - lastY;
+            imageContainer.style.transform = `translate(${currentTransformX}px, ${currentTransformY}px) scale(${currentScale})`;
         }
     }, { passive: false });
  
@@ -336,20 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
         handleEnd();
     });
  
-    // Double tap to reset zoom
-    let lastTap = 0;
-    imageContainer.addEventListener('touchend', (e) => {
-        const now = Date.now();
-        if (now - lastTap < 300) {
-            if (!isDragging) {
-                transform.scale = 1;
-                transform.translateX = 0;
-                transform.translateY = 0;
-                updateTransform();
-            }
-        }
-        lastTap = now;
-    });
- 
+    // Initialize feedback
     updateFeedback();
  });
