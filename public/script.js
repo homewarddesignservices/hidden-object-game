@@ -61,12 +61,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
  
     function updateTransform() {
-        constrainPan();
+        const rect = imageContainer.getBoundingClientRect();
         
-        // Apply transform relative to pinch point
+        // Ensure minimum scale fills container
+        const containerAspect = rect.width / rect.height;
+        const imageAspect = originalWidth / originalHeight;
+        const minScale = containerAspect > imageAspect 
+            ? rect.height / (originalHeight / currentScale)
+            : rect.width / (originalWidth / currentScale);
+        
+        // Apply minimum scale
+        if (currentScale < minScale) {
+            currentScale = minScale;
+        }
+    
+        // Calculate maximum translations
+        const scaledWidth = rect.width * currentScale;
+        const scaledHeight = rect.height * currentScale;
+        const maxX = Math.max(0, (scaledWidth - rect.width) / 2);
+        const maxY = Math.max(0, (scaledHeight - rect.height) / 2);
+    
+        // Hard constrain translations
+        currentTransformX = Math.max(Math.min(currentTransformX, maxX), -maxX);
+        currentTransformY = Math.max(Math.min(currentTransformY, maxY), -maxY);
+    
         const transformX = currentTransformX - (pinchStartX * (currentScale - 1));
         const transformY = currentTransformY - (pinchStartY * (currentScale - 1));
-        
+    
         imageContainer.style.transform = 
             `translate(${transformX}px, ${transformY}px) scale(${currentScale})`;
     }
