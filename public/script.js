@@ -42,54 +42,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const feedback = document.getElementById('feedback');
     const gameImage = document.getElementById('game-image');
  
-    function constrainPan() {
+    function getBoundaries() {
         const rect = imageContainer.getBoundingClientRect();
         const containerWidth = rect.width;
         const containerHeight = rect.height;
         
-        // Calculate the scaled dimensions
-        const scaledWidth = containerWidth * currentScale;
-        const scaledHeight = containerHeight * currentScale;
+        // Calculate the minimum scale needed to fill the container
+        const scaleX = containerWidth / originalWidth;
+        const scaleY = containerHeight / originalHeight;
+        const minScale = Math.max(scaleX, scaleY);
         
-        // Calculate maximum allowed translation
-        const maxX = (scaledWidth - containerWidth) / 2;
-        const maxY = (scaledHeight - containerHeight) / 2;
-        
-        // Constrain translations
-        currentTransformX = Math.max(Math.min(currentTransformX, maxX), -maxX);
-        currentTransformY = Math.max(Math.min(currentTransformY, maxY), -maxY);
-    }
- 
-    function updateTransform() {
-        const rect = imageContainer.getBoundingClientRect();
-        
-        // Ensure image always fills container
-        const containerWidth = rect.width;
-        const containerHeight = rect.height;
-        const containerAspect = containerWidth / containerHeight;
-        const imageAspect = originalWidth / originalHeight;
-        
-        // Set minimum scale to ensure no white space
-        const minScaleX = containerWidth / originalWidth;
-        const minScaleY = containerHeight / originalHeight;
-        const minScale = Math.max(minScaleX, minScaleY);
-        
-        // Enforce minimum scale
-        currentScale = Math.max(currentScale, minScale);
-        
-        // Calculate boundaries to prevent white space
+        // Calculate maximum boundaries based on current scale
         const scaledWidth = originalWidth * currentScale;
         const scaledHeight = originalHeight * currentScale;
         
-        // Calculate maximum allowed translation to keep image filling container
-        const maxTranslateX = (scaledWidth - containerWidth) / 2;
-        const maxTranslateY = (scaledHeight - containerHeight) / 2;
+        const maxX = Math.max(0, (scaledWidth - containerWidth) / 2);
+        const maxY = Math.max(0, (scaledHeight - containerHeight) / 2);
         
-        // Constrain translation
-        currentTransformX = Math.max(Math.min(currentTransformX, maxTranslateX), -maxTranslateX);
-        currentTransformY = Math.max(Math.min(currentTransformY, maxTranslateY), -maxTranslateY);
+        return { minScale, maxX, maxY, containerWidth, containerHeight };
+    }
+ 
+    function updateTransform() {
+        const bounds = getBoundaries();
         
-        imageContainer.style.transform = `translate(${currentTransformX}px, ${currentTransformY}px) scale(${currentScale})`;
+        // Enforce minimum scale
+        if (currentScale < bounds.minScale) {
+            currentScale = bounds.minScale;
+        }
+        
+        // Hard constrain translations to prevent white space
+        currentTransformX = Math.max(Math.min(currentTransformX, bounds.maxX), -bounds.maxX);
+        currentTransformY = Math.max(Math.min(currentTransformY, bounds.maxY), -bounds.maxY);
+ 
+        imageContainer.style.transform = 
+            `translate(${currentTransformX}px, ${currentTransformY}px) scale(${currentScale})`;
     }
  
     // Keep all original game functions unchanged
@@ -334,17 +320,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 touch2.clientX - touch1.clientX,
                 touch2.clientY - touch1.clientY
             );
-            currentScale = Math.min(Math.max(initialScale * (distance / initialDistance), 1), 4);
             
-            const midX = (touch1.clientX + touch2.clientX) / 2;
-            const midY = (touch1.clientY + touch2.clientY) / 2;
+            // Calculate new scale
+            const newScale = Math.min(Math.max(
+                initialScale * (distance / initialDistance), 
+                getBoundaries().minScale
+            ), MAX_ZOOM);
             
-            currentTransformX += midX - lastX;
-            currentTransformY += midY - lastY;
-            lastX = midX;
-            lastY = midY;
-            
-            updateTransform();
+            // Only update if scale has changed
+            if (newScale !== currentScale) {
+                currentScale = newScale;
+                
+                const midX = (touch1.clientX + touch2.clientX) / 2;
+                const midY = (touch1.clientY + touch2.clientY) / 2;
+                
+                // Update transform with boundaries check
+                currentTransformX += midX - lastX;
+                currentTransformY += midY - lastY;
+                lastX = midX;
+                lastY = midY;
+                
+                updateTransform();
+            }
         } else if (e.touches.length === 1 && isDragging) {
             const touch = e.touches[0];
             currentTransformX = touch.clientX - lastX;
@@ -356,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
     imageContainer.addEventListener('touchend', (e) => {
         if (e.touches.length === 0) {
             isDragging = false;
+            updateTransform(); // Final boundary check
         }
         handleEnd();
     });
