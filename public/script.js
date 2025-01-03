@@ -13,11 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
         {
             x: 2752,  // Second bird
             y: 764,
-            radius: 100,  // Larger radius for second bird
+            radius: 100,
             found: false
         }
     ];
 
+    // Zoom and pan variables
     let currentScale = 1;
     let lastScale = 1;
     let startDistance = 0;
@@ -26,6 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let startY = 0;
     let translateX = 0;
     let translateY = 0;
+    let initialPinchDistance = 0;
+    let initialPinchX = 0;
+    let initialPinchY = 0;
 
     const imageContainer = document.getElementById('image-container');
     const feedback = document.getElementById('feedback');
@@ -36,6 +40,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let progressCircle = null;
     let currentCheckPosition = null;
     let startTimeout = null;
+
+    // Helper function to get coordinates relative to container
+    function getPointFromTouch(touch) {
+        const rect = imageContainer.getBoundingClientRect();
+        return {
+            x: touch.clientX - rect.left,
+            y: touch.clientY - rect.top
+        };
+    }
 
     function createProgressCircle(x, y) {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -239,15 +252,24 @@ document.addEventListener('DOMContentLoaded', () => {
     imageContainer.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
-            startDistance = Math.hypot(
-                e.touches[0].clientX - e.touches[1].clientX,
-                e.touches[0].clientY - e.touches[1].clientY
+            const touch1 = getPointFromTouch(e.touches[0]);
+            const touch2 = getPointFromTouch(e.touches[1]);
+            
+            // Calculate center point between the two touches
+            initialPinchX = (touch1.x + touch2.x) / 2;
+            initialPinchY = (touch1.y + touch2.y) / 2;
+            
+            initialPinchDistance = Math.hypot(
+                touch1.x - touch2.x,
+                touch1.y - touch2.y
             );
+            
             lastScale = currentScale;
         } else if (e.touches.length === 1 && currentScale > 1) {
             isDragging = true;
-            startX = e.touches[0].clientX - translateX;
-            startY = e.touches[0].clientY - translateY;
+            const touch = getPointFromTouch(e.touches[0]);
+            startX = touch.x - translateX;
+            startY = touch.y - translateY;
         } else {
             const touch = e.touches[0];
             const rect = imageContainer.getBoundingClientRect();
@@ -260,19 +282,33 @@ document.addEventListener('DOMContentLoaded', () => {
     imageContainer.addEventListener('touchmove', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
-            const distance = Math.hypot(
-                e.touches[0].clientX - e.touches[1].clientX,
-                e.touches[0].clientY - e.touches[1].clientY
+            const touch1 = getPointFromTouch(e.touches[0]);
+            const touch2 = getPointFromTouch(e.touches[1]);
+            
+            const currentPinchX = (touch1.x + touch2.x) / 2;
+            const currentPinchY = (touch1.y + touch2.y) / 2;
+            
+            const pinchDistance = Math.hypot(
+                touch1.x - touch2.x,
+                touch1.y - touch2.y
             );
             
-            currentScale = Math.min(Math.max(1, lastScale * distance / startDistance), 4);
-            imageContainer.style.transform = `scale(${currentScale}) translate(${translateX / currentScale}px, ${translateY / currentScale}px)`;
+            const newScale = Math.min(Math.max(1, lastScale * (pinchDistance / initialPinchDistance)), 4);
+            
+            // Calculate the transform origin offset
+            const scaleChange = newScale - currentScale;
+            translateX += (initialPinchX - currentPinchX) * currentScale;
+            translateY += (initialPinchY - currentPinchY) * currentScale;
+            
+            currentScale = newScale;
+            
+            imageContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
         } else if (e.touches.length === 1 && isDragging) {
-            const dx = e.touches[0].clientX - startX;
-            const dy = e.touches[0].clientY - startY;
-            translateX = dx;
-            translateY = dy;
-            imageContainer.style.transform = `scale(${currentScale}) translate(${translateX / currentScale}px, ${translateY / currentScale}px)`;
+            const touch = getPointFromTouch(e.touches[0]);
+            translateX = touch.x - startX;
+            translateY = touch.y - startY;
+            
+            imageContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
         }
     }, { passive: false });
 
