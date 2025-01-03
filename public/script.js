@@ -35,11 +35,39 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastX = 0;
     let lastY = 0;
     let isDragging = false;
+    let pinchStartX = 0;
+    let pinchStartY = 0;
  
     const imageContainer = document.getElementById('image-container');
     const feedback = document.getElementById('feedback');
     const gameImage = document.getElementById('game-image');
  
+    function constrainPan() {
+        const rect = imageContainer.getBoundingClientRect();
+        const containerWidth = rect.width;
+        const containerHeight = rect.height;
+        
+        // Calculate boundaries based on current zoom level
+        const maxX = (currentScale - 1) * containerWidth / 2;
+        const maxY = (currentScale - 1) * containerHeight / 2;
+        
+        // Constrain the pan values
+        currentTransformX = Math.min(Math.max(currentTransformX, -maxX), maxX);
+        currentTransformY = Math.min(Math.max(currentTransformY, -maxY), maxY);
+    }
+ 
+    function updateTransform() {
+        constrainPan();
+        
+        // Apply transform relative to pinch point
+        const transformX = currentTransformX - (pinchStartX * (currentScale - 1));
+        const transformY = currentTransformY - (pinchStartY * (currentScale - 1));
+        
+        imageContainer.style.transform = 
+            `translate(${transformX}px, ${transformY}px) scale(${currentScale})`;
+    }
+ 
+    // Keep all original game functions unchanged
     function createProgressCircle(x, y) {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         circle.setAttribute('class', 'progress-circle');
@@ -242,8 +270,13 @@ document.addEventListener('DOMContentLoaded', () => {
     imageContainer.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
+            const rect = imageContainer.getBoundingClientRect();
             const touch1 = e.touches[0];
             const touch2 = e.touches[1];
+            
+            // Store pinch start point
+            pinchStartX = ((touch1.clientX + touch2.clientX) / 2) - rect.left;
+            pinchStartY = ((touch1.clientY + touch2.clientY) / 2) - rect.top;
             
             initialDistance = Math.hypot(
                 touch2.clientX - touch1.clientX,
@@ -286,13 +319,12 @@ document.addEventListener('DOMContentLoaded', () => {
             lastX = midX;
             lastY = midY;
             
-            imageContainer.style.transformOrigin = '0 0';
-            imageContainer.style.transform = `translate(${currentTransformX}px, ${currentTransformY}px) scale(${currentScale})`;
+            updateTransform();
         } else if (e.touches.length === 1 && isDragging) {
             const touch = e.touches[0];
             currentTransformX = touch.clientX - lastX;
             currentTransformY = touch.clientY - lastY;
-            imageContainer.style.transform = `translate(${currentTransformX}px, ${currentTransformY}px) scale(${currentScale})`;
+            updateTransform();
         }
     }, { passive: false });
  
