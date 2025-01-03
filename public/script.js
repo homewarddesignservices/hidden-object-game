@@ -35,8 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastX = 0;
     let lastY = 0;
     let isDragging = false;
-    let pinchStartX = 0;
-    let pinchStartY = 0;
  
     const imageContainer = document.getElementById('image-container');
     const feedback = document.getElementById('feedback');
@@ -47,54 +45,44 @@ document.addEventListener('DOMContentLoaded', () => {
         const containerWidth = rect.width;
         const containerHeight = rect.height;
         
-        // Get the actual scaled dimensions of the image
-        const scaledWidth = originalWidth * currentScale;
-        const scaledHeight = originalHeight * currentScale;
+        // Calculate current image dimensions
+        const imageWidth = containerWidth * currentScale;
+        const imageHeight = containerHeight * currentScale;
         
-        // Calculate absolute boundaries
-        const minX = containerWidth - scaledWidth;  // Maximum negative translation
-        const minY = containerHeight - scaledHeight;  // Maximum negative translation
+        // Calculate maximum allowed movement based on scale
+        const maxOffsetX = (imageWidth - containerWidth) / 2;
+        const maxOffsetY = (imageHeight - containerHeight) / 2;
         
         return {
-            minX,
-            minY,
+            maxOffsetX,
+            maxOffsetY,
             containerWidth,
-            containerHeight,
-            scaledWidth,
-            scaledHeight
+            containerHeight
         };
     }
  
-    function updateTransform() {
+    function constrainMovement() {
         const bounds = getBoundaries();
         
-        // Lock to absolute boundaries
-        // Don't let the right edge go past left boundary
-        if (currentTransformX < bounds.minX) {
-            currentTransformX = bounds.minX;
-        }
-        
-        // Don't let the left edge go past right boundary
-        if (currentTransformX > 0) {
+        // If scaled size is smaller than container, prevent movement
+        if (currentScale <= 1) {
             currentTransformX = 0;
-        }
-        
-        // Don't let the bottom edge go past top boundary
-        if (currentTransformY < bounds.minY) {
-            currentTransformY = bounds.minY;
-        }
-        
-        // Don't let the top edge go past bottom boundary
-        if (currentTransformY > 0) {
             currentTransformY = 0;
+            return;
         }
-    
-        imageContainer.style.transformOrigin = '0 0';  // Set origin to top-left
-        imageContainer.style.transform = 
-            `translate(${currentTransformX}px, ${currentTransformY}px) scale(${currentScale})`;
+        
+        // Constrain X and Y movement
+        currentTransformX = Math.min(bounds.maxOffsetX, Math.max(-bounds.maxOffsetX, currentTransformX));
+        currentTransformY = Math.min(bounds.maxOffsetY, Math.max(-bounds.maxOffsetY, currentTransformY));
     }
  
-    // Keep all original game functions unchanged
+    function updateTransform() {
+        constrainMovement();
+        imageContainer.style.transformOrigin = 'center';
+        imageContainer.style.transform = 
+            `scale(${currentScale}) translate(${currentTransformX / currentScale}px, ${currentTransformY / currentScale}px)`;
+    }
+ 
     function createProgressCircle(x, y) {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         circle.setAttribute('class', 'progress-circle');
@@ -297,13 +285,8 @@ document.addEventListener('DOMContentLoaded', () => {
     imageContainer.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
-            const rect = imageContainer.getBoundingClientRect();
             const touch1 = e.touches[0];
             const touch2 = e.touches[1];
-            
-            // Store pinch start point
-            pinchStartX = ((touch1.clientX + touch2.clientX) / 2) - rect.left;
-            pinchStartY = ((touch1.clientY + touch2.clientY) / 2) - rect.top;
             
             initialDistance = Math.hypot(
                 touch2.clientX - touch1.clientX,
@@ -337,20 +320,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 touch2.clientY - touch1.clientY
             );
             
-            // Calculate new scale
             const newScale = Math.min(Math.max(
-                initialScale * (distance / initialDistance), 
-                getBoundaries().minScale
+                initialScale * (distance / initialDistance),
+                MIN_ZOOM
             ), MAX_ZOOM);
             
-            // Only update if scale has changed
             if (newScale !== currentScale) {
                 currentScale = newScale;
-                
                 const midX = (touch1.clientX + touch2.clientX) / 2;
                 const midY = (touch1.clientY + touch2.clientY) / 2;
                 
-                // Update transform with boundaries check
                 currentTransformX += midX - lastX;
                 currentTransformY += midY - lastY;
                 lastX = midX;
@@ -369,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
     imageContainer.addEventListener('touchend', (e) => {
         if (e.touches.length === 0) {
             isDragging = false;
-            updateTransform(); // Final boundary check
+            updateTransform();
         }
         handleEnd();
     });
