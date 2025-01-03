@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let startY = 0;
     let translateX = 0;
     let translateY = 0;
+    let lastMidpoint = { x: 0, y: 0 };
 
     const imageContainer = document.getElementById('image-container');
     const feedback = document.getElementById('feedback');
@@ -41,6 +42,13 @@ document.addEventListener('DOMContentLoaded', () => {
             touch1.clientX - touch2.clientX,
             touch1.clientY - touch2.clientY
         );
+    }
+
+    function getMidpoint(touch1, touch2) {
+        return {
+            x: (touch1.clientX + touch2.clientX) / 2,
+            y: (touch1.clientY + touch2.clientY) / 2
+        };
     }
 
     function handleZoomAndPan() {
@@ -159,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (isTarget) {
             progressCircle.querySelector('.progress').style.stroke = '#4CAF50';
-            progressCircle.classList.add('found-target'); // Add class to mark as found
+            progressCircle.classList.add('found-target');
             const displayWidth = gameImage.clientWidth;
             const displayHeight = gameImage.clientHeight;
             
@@ -184,10 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
             progressCircle.querySelector('.progress').style.stroke = '#ff0000';
         }
 
-        // Add pulse animation
         progressCircle.classList.add('pulse');
 
-        // Remove incorrect circles after animation
         if (!isTarget) {
             setTimeout(() => {
                 if (progressCircle) {
@@ -204,12 +210,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const x = touchX || e.clientX - rect.left;
         const y = touchY || e.clientY - rect.top;
 
-        // Clear any existing timeout
         if (startTimeout) {
             clearTimeout(startTimeout);
         }
 
-        // Add a 200ms delay before starting the circle
         startTimeout = setTimeout(() => {
             holdStartTime = Date.now();
             progressCircle = createProgressCircle(x, y);
@@ -224,11 +228,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     completeCheck(currentCheckPosition.x, currentCheckPosition.y);
                 }
             }, 10);
-        }, 200); // 200ms delay
+        }, 200);
     }
 
     function handleEnd() {
-        // Clear the start timeout if it exists
         if (startTimeout) {
             clearTimeout(startTimeout);
             startTimeout = null;
@@ -255,13 +258,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.touches.length === 2) {
             e.preventDefault();
             startDistance = getDistance(e.touches[0], e.touches[1]);
+            lastMidpoint = getMidpoint(e.touches[0], e.touches[1]);
+            const rect = imageContainer.getBoundingClientRect();
+            lastMidpoint.x -= rect.left;
+            lastMidpoint.y -= rect.top;
             isDragging = false;
         } else if (e.touches.length === 1 && currentScale > 1) {
             isDragging = true;
             startX = e.touches[0].clientX - translateX;
             startY = e.touches[0].clientY - translateY;
         } else {
-            // Single touch - handle game mechanics
             const touch = e.touches[0];
             const rect = imageContainer.getBoundingClientRect();
             const x = touch.clientX - rect.left;
@@ -274,10 +280,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.touches.length === 2) {
             e.preventDefault();
             const distance = getDistance(e.touches[0], e.touches[1]);
-            const scale = (distance / startDistance) * currentScale;
-            currentScale = Math.min(Math.max(1, scale), 4); // Limit zoom between 1x and 4x
+            const newScale = (distance / startDistance) * currentScale;
+            const midpoint = getMidpoint(e.touches[0], e.touches[1]);
+            const rect = imageContainer.getBoundingClientRect();
+            midpoint.x -= rect.left;
+            midpoint.y -= rect.top;
+
+            const scaleChange = newScale - currentScale;
+            translateX += (midpoint.x - lastMidpoint.x) * currentScale;
+            translateY += (midpoint.y - lastMidpoint.y) * currentScale;
+            
+            currentScale = Math.min(Math.max(1, newScale), 4);
+            
             handleZoomAndPan();
             startDistance = distance;
+            lastMidpoint = midpoint;
         } else if (e.touches.length === 1 && isDragging) {
             translateX = e.touches[0].clientX - startX;
             translateY = e.touches[0].clientY - startY;
@@ -300,10 +317,12 @@ document.addEventListener('DOMContentLoaded', () => {
     imageContainer.addEventListener('touchend', (e) => {
         const now = Date.now();
         if (now - lastTap < 300) {
-            currentScale = 1;
-            translateX = 0;
-            translateY = 0;
-            handleZoomAndPan();
+            if (!isDragging) {
+                currentScale = 1;
+                translateX = 0;
+                translateY = 0;
+                handleZoomAndPan();
+            }
         }
         lastTap = now;
     });
