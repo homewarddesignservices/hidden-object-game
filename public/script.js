@@ -47,25 +47,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const containerWidth = rect.width;
         const containerHeight = rect.height;
         
-        // Calculate the minimum scale needed to fill the container
-        const scaleX = containerWidth / originalWidth;
-        const scaleY = containerHeight / originalHeight;
-        const minScale = Math.max(scaleX, scaleY);
-        
-        // Calculate image dimensions at current scale
+        // Get the actual scaled dimensions of the image
         const scaledWidth = originalWidth * currentScale;
         const scaledHeight = originalHeight * currentScale;
         
-        // Calculate maximum allowed translation
-        // This ensures at least one edge touches the container at all times
-        const maxX = Math.max(0, (scaledWidth - containerWidth)) / 2;
-        const maxY = Math.max(0, (scaledHeight - containerHeight)) / 2;
+        // Calculate absolute boundaries
+        const minX = containerWidth - scaledWidth;  // Maximum negative translation
+        const minY = containerHeight - scaledHeight;  // Maximum negative translation
         
-        return { 
-            minScale, 
-            maxX, 
-            maxY, 
-            containerWidth, 
+        return {
+            minX,
+            minY,
+            containerWidth,
             containerHeight,
             scaledWidth,
             scaledHeight
@@ -75,25 +68,28 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateTransform() {
         const bounds = getBoundaries();
         
-        // Enforce minimum scale
-        if (currentScale < bounds.minScale) {
-            currentScale = bounds.minScale;
+        // Lock to absolute boundaries
+        // Don't let the right edge go past left boundary
+        if (currentTransformX < bounds.minX) {
+            currentTransformX = bounds.minX;
         }
         
-        // Strictly enforce boundaries
-        // If the image is smaller than container in either dimension, center it
-        if (bounds.scaledWidth <= bounds.containerWidth) {
+        // Don't let the left edge go past right boundary
+        if (currentTransformX > 0) {
             currentTransformX = 0;
-        } else {
-            currentTransformX = Math.max(Math.min(currentTransformX, bounds.maxX), -bounds.maxX);
         }
         
-        if (bounds.scaledHeight <= bounds.containerHeight) {
+        // Don't let the bottom edge go past top boundary
+        if (currentTransformY < bounds.minY) {
+            currentTransformY = bounds.minY;
+        }
+        
+        // Don't let the top edge go past bottom boundary
+        if (currentTransformY > 0) {
             currentTransformY = 0;
-        } else {
-            currentTransformY = Math.max(Math.min(currentTransformY, bounds.maxY), -bounds.maxY);
         }
     
+        imageContainer.style.transformOrigin = '0 0';  // Set origin to top-left
         imageContainer.style.transform = 
             `translate(${currentTransformX}px, ${currentTransformY}px) scale(${currentScale})`;
     }
