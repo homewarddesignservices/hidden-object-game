@@ -28,10 +28,11 @@ body {
     position: relative;
     display: inline-block;
     cursor: crosshair;
+    transform-origin: center;
+    touch-action: none;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
-    touch-action: none;
-    will-change: transform;
+    user-select: none;
 }
 
 #game-image {

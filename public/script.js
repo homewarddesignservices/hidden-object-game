@@ -19,13 +19,13 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     let currentScale = 1;
+    let lastScale = 1;
     let startDistance = 0;
     let isDragging = false;
     let startX = 0;
     let startY = 0;
     let translateX = 0;
     let translateY = 0;
-    let lastMidpoint = { x: 0, y: 0 };
 
     const imageContainer = document.getElementById('image-container');
     const feedback = document.getElementById('feedback');
@@ -36,24 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let progressCircle = null;
     let currentCheckPosition = null;
     let startTimeout = null;
-
-    function getDistance(touch1, touch2) {
-        return Math.hypot(
-            touch1.clientX - touch2.clientX,
-            touch1.clientY - touch2.clientY
-        );
-    }
-
-    function getMidpoint(touch1, touch2) {
-        return {
-            x: (touch1.clientX + touch2.clientX) / 2,
-            y: (touch1.clientY + touch2.clientY) / 2
-        };
-    }
-
-    function handleZoomAndPan() {
-        imageContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
-    }
 
     function createProgressCircle(x, y) {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -257,12 +239,11 @@ document.addEventListener('DOMContentLoaded', () => {
     imageContainer.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
-            startDistance = getDistance(e.touches[0], e.touches[1]);
-            lastMidpoint = getMidpoint(e.touches[0], e.touches[1]);
-            const rect = imageContainer.getBoundingClientRect();
-            lastMidpoint.x -= rect.left;
-            lastMidpoint.y -= rect.top;
-            isDragging = false;
+            startDistance = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            lastScale = currentScale;
         } else if (e.touches.length === 1 && currentScale > 1) {
             isDragging = true;
             startX = e.touches[0].clientX - translateX;
@@ -279,32 +260,26 @@ document.addEventListener('DOMContentLoaded', () => {
     imageContainer.addEventListener('touchmove', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
-            const distance = getDistance(e.touches[0], e.touches[1]);
-            const newScale = (distance / startDistance) * currentScale;
-            const midpoint = getMidpoint(e.touches[0], e.touches[1]);
-            const rect = imageContainer.getBoundingClientRect();
-            midpoint.x -= rect.left;
-            midpoint.y -= rect.top;
-
-            const scaleChange = newScale - currentScale;
-            translateX += (midpoint.x - lastMidpoint.x) * currentScale;
-            translateY += (midpoint.y - lastMidpoint.y) * currentScale;
+            const distance = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
             
-            currentScale = Math.min(Math.max(1, newScale), 4);
-            
-            handleZoomAndPan();
-            startDistance = distance;
-            lastMidpoint = midpoint;
+            currentScale = Math.min(Math.max(1, lastScale * distance / startDistance), 4);
+            imageContainer.style.transform = `scale(${currentScale}) translate(${translateX / currentScale}px, ${translateY / currentScale}px)`;
         } else if (e.touches.length === 1 && isDragging) {
-            translateX = e.touches[0].clientX - startX;
-            translateY = e.touches[0].clientY - startY;
-            handleZoomAndPan();
+            const dx = e.touches[0].clientX - startX;
+            const dy = e.touches[0].clientY - startY;
+            translateX = dx;
+            translateY = dy;
+            imageContainer.style.transform = `scale(${currentScale}) translate(${translateX / currentScale}px, ${translateY / currentScale}px)`;
         }
     }, { passive: false });
 
     imageContainer.addEventListener('touchend', (e) => {
         if (e.touches.length < 2) {
             startDistance = 0;
+            lastScale = currentScale;
         }
         if (e.touches.length === 0) {
             isDragging = false;
@@ -319,9 +294,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (now - lastTap < 300) {
             if (!isDragging) {
                 currentScale = 1;
+                lastScale = 1;
                 translateX = 0;
                 translateY = 0;
-                handleZoomAndPan();
+                imageContainer.style.transform = 'none';
             }
         }
         lastTap = now;
