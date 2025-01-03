@@ -18,6 +18,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
 
+    let currentScale = 1;
+    let startDistance = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let translateX = 0;
+    let translateY = 0;
+
     const imageContainer = document.getElementById('image-container');
     const feedback = document.getElementById('feedback');
     const gameImage = document.getElementById('game-image');
@@ -27,6 +35,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let progressCircle = null;
     let currentCheckPosition = null;
     let startTimeout = null;
+
+    function getDistance(touch1, touch2) {
+        return Math.hypot(
+            touch1.clientX - touch2.clientX,
+            touch1.clientY - touch2.clientY
+        );
+    }
+
+    function handleZoomAndPan() {
+        imageContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
+    }
 
     function createProgressCircle(x, y) {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -233,9 +252,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Touch Events
     imageContainer.addEventListener('touchstart', (e) => {
-        // Only handle single touches for the game mechanic
-        if (e.touches.length === 1) {
+        if (e.touches.length === 2) {
             e.preventDefault();
+            startDistance = getDistance(e.touches[0], e.touches[1]);
+            isDragging = false;
+        } else if (e.touches.length === 1 && currentScale > 1) {
+            isDragging = true;
+            startX = e.touches[0].clientX - translateX;
+            startY = e.touches[0].clientY - translateY;
+        } else {
+            // Single touch - handle game mechanics
             const touch = e.touches[0];
             const rect = imageContainer.getBoundingClientRect();
             const x = touch.clientX - rect.left;
@@ -245,25 +271,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { passive: false });
 
     imageContainer.addEventListener('touchmove', (e) => {
-        if (e.touches.length > 1) {
-            // If multiple touches detected, only clear ongoing progress
-            if (holdTimer) {
-                clearInterval(holdTimer);
-                holdTimer = null;
-            }
-            if (progressCircle && !progressCircle.classList.contains('pulse')) {
-                progressCircle.remove();
-                progressCircle = null;
-            }
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            const distance = getDistance(e.touches[0], e.touches[1]);
+            const scale = (distance / startDistance) * currentScale;
+            currentScale = Math.min(Math.max(1, scale), 4); // Limit zoom between 1x and 4x
+            handleZoomAndPan();
+            startDistance = distance;
+        } else if (e.touches.length === 1 && isDragging) {
+            translateX = e.touches[0].clientX - startX;
+            translateY = e.touches[0].clientY - startY;
+            handleZoomAndPan();
         }
-    });
+    }, { passive: false });
 
-    document.addEventListener('touchend', (e) => {
+    imageContainer.addEventListener('touchend', (e) => {
+        if (e.touches.length < 2) {
+            startDistance = 0;
+        }
+        if (e.touches.length === 0) {
+            isDragging = false;
+        }
         handleEnd();
     });
 
-    document.addEventListener('touchcancel', (e) => {
-        handleEnd();
+    // Double tap to reset zoom
+    let lastTap = 0;
+    imageContainer.addEventListener('touchend', (e) => {
+        const now = Date.now();
+        if (now - lastTap < 300) {
+            currentScale = 1;
+            translateX = 0;
+            translateY = 0;
+            handleZoomAndPan();
+        }
+        lastTap = now;
     });
 
     // Initialize feedback
