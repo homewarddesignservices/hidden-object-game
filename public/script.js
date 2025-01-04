@@ -101,11 +101,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
  
     function createProgressCircle(x, y) {
+        // Create a container for the circle that will transform with the image
+        const circleContainer = document.createElement('div');
+        circleContainer.style.position = 'absolute';
+        circleContainer.style.left = `${x}px`;
+        circleContainer.style.top = `${y}px`;
+        circleContainer.style.transform = `translate(-50%, -50%) scale(${1/currentScale})`;
+        
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         circle.setAttribute('class', 'progress-circle');
         circle.setAttribute('viewBox', '0 0 36 36');
-        circle.style.left = `${x}px`;
-        circle.style.top = `${y}px`;
  
         const backgroundCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         backgroundCircle.setAttribute('class', 'background');
@@ -123,9 +128,10 @@ document.addEventListener('DOMContentLoaded', () => {
  
         circle.appendChild(backgroundCircle);
         circle.appendChild(progressArc);
-        imageContainer.appendChild(circle);
+        circleContainer.appendChild(circle);
+        imageContainer.appendChild(circleContainer);
  
-        return circle;
+        return circleContainer;
     }
  
     function updateProgress(startTime) {
@@ -250,30 +256,15 @@ document.addEventListener('DOMContentLoaded', () => {
  
     function handleStart(e, touchX, touchY) {
         if (checkAllFound()) return;
-    
+ 
         const rect = imageContainer.getBoundingClientRect();
-        const containerCenterX = rect.width / 2;
-        const containerCenterY = rect.height / 2;
-        
-        // Get raw click coordinates
-        let x = touchX || e.clientX - rect.left;
-        let y = touchY || e.clientY - rect.top;
-    
-        // If zoomed, adjust coordinates relative to center and scale
-        if (currentScale > 1) {
-            // Calculate position relative to center
-            const relativeX = x - containerCenterX;
-            const relativeY = y - containerCenterY;
-            
-            // Adjust for scale and transform
-            x = containerCenterX + (relativeX / currentScale) - (currentTransformX / currentScale);
-            y = containerCenterY + (relativeY / currentScale) - (currentTransformY / currentScale);
-        }
-    
+        const x = touchX || e.clientX - rect.left;
+        const y = touchY || e.clientY - rect.top;
+ 
         if (startTimeout) {
             clearTimeout(startTimeout);
         }
-    
+ 
         startTimeout = setTimeout(() => {
             holdStartTime = Date.now();
             progressCircle = createProgressCircle(x, y);
