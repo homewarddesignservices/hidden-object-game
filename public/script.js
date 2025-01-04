@@ -250,15 +250,21 @@ document.addEventListener('DOMContentLoaded', () => {
  
     function handleStart(e, touchX, touchY) {
         if (checkAllFound()) return;
- 
+    
         const rect = imageContainer.getBoundingClientRect();
-        const x = touchX || e.clientX - rect.left;
-        const y = touchY || e.clientY - rect.top;
- 
+        let x = touchX || e.clientX - rect.left;
+        let y = touchY || e.clientY - rect.top;
+    
+        // Adjust coordinates based on current transform
+        if (currentScale > 1) {
+            x = (x - currentTransformX) / currentScale;
+            y = (y - currentTransformY) / currentScale;
+        }
+    
         if (startTimeout) {
             clearTimeout(startTimeout);
         }
- 
+    
         startTimeout = setTimeout(() => {
             holdStartTime = Date.now();
             progressCircle = createProgressCircle(x, y);
