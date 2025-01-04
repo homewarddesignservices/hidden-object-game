@@ -39,7 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageContainer = document.getElementById('image-container');
     const feedback = document.getElementById('feedback');
     const gameImage = document.getElementById('game-image');
- 
+    
+    imageContainer.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    });
+    
+    gameImage.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    });
     // Prevent context menu and image dragging
     imageContainer.addEventListener('contextmenu', (e) => {
         e.preventDefault();
