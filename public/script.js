@@ -39,25 +39,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageContainer = document.getElementById('image-container');
     const feedback = document.getElementById('feedback');
     const gameImage = document.getElementById('game-image');
-    
-    imageContainer.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        return false;
-    });
-    
-    gameImage.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        return false;
-    });
-    // Prevent context menu and image dragging
+ 
+    // Prevent context menu
     imageContainer.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         return false;
     });
  
-    gameImage.style.webkitTouchCallout = 'none';
-    gameImage.style.webkitUserSelect = 'none';
-    gameImage.draggable = false;
+    gameImage.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    });
  
     function getBoundaries() {
         const rect = imageContainer.getBoundingClientRect();
@@ -321,16 +313,21 @@ document.addEventListener('DOMContentLoaded', () => {
             
             lastX = (touch1.clientX + touch2.clientX) / 2;
             lastY = (touch1.clientY + touch2.clientY) / 2;
-        } else if (e.touches.length === 1 && currentScale > 1) {
-            isDragging = true;
-            lastX = e.touches[0].clientX - currentTransformX;
-            lastY = e.touches[0].clientY - currentTransformY;
-        } else {
+        } else if (e.touches.length === 1) {
             const touch = e.touches[0];
             const rect = imageContainer.getBoundingClientRect();
             const x = touch.clientX - rect.left;
             const y = touch.clientY - rect.top;
+ 
+            // Start the selection circle regardless of zoom level
             handleStart(e, x, y);
+ 
+            // If zoomed in, also enable dragging
+            if (currentScale > 1) {
+                isDragging = true;
+                lastX = touch.clientX - currentTransformX;
+                lastY = touch.clientY - currentTransformY;
+            }
         }
     }, { passive: false });
  
