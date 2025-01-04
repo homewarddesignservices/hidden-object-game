@@ -45,42 +45,48 @@ document.addEventListener('DOMContentLoaded', () => {
         const containerWidth = rect.width;
         const containerHeight = rect.height;
         
-        // Calculate current image dimensions
-        const imageWidth = containerWidth * currentScale;
-        const imageHeight = containerHeight * currentScale;
+        // Calculate current image dimensions at scale
+        const scaledWidth = containerWidth * currentScale;
+        const scaledHeight = containerHeight * currentScale;
         
-        // Calculate maximum allowed movement based on scale
-        const maxOffsetX = (imageWidth - containerWidth) / 2;
-        const maxOffsetY = (imageHeight - containerHeight) / 2;
-        
+        // Calculate the maximum allowed translation
+        const maxTranslateX = Math.abs(scaledWidth - containerWidth) / 2;
+        const maxTranslateY = Math.abs(scaledHeight - containerHeight) / 2;
+ 
         return {
-            maxOffsetX,
-            maxOffsetY,
+            maxTranslateX,
+            maxTranslateY,
             containerWidth,
-            containerHeight
+            containerHeight,
+            scaledWidth,
+            scaledHeight
         };
     }
  
-    function constrainMovement() {
+    function constrainTransform() {
         const bounds = getBoundaries();
         
-        // If scaled size is smaller than container, prevent movement
+        // If not zoomed, center image
         if (currentScale <= 1) {
             currentTransformX = 0;
             currentTransformY = 0;
             return;
         }
-        
-        // Constrain X and Y movement
-        currentTransformX = Math.min(bounds.maxOffsetX, Math.max(-bounds.maxOffsetX, currentTransformX));
-        currentTransformY = Math.min(bounds.maxOffsetY, Math.max(-bounds.maxOffsetY, currentTransformY));
+ 
+        // Hard constrain the translations
+        currentTransformX = currentTransformX > bounds.maxTranslateX ? bounds.maxTranslateX : 
+                           currentTransformX < -bounds.maxTranslateX ? -bounds.maxTranslateX : 
+                           currentTransformX;
+                           
+        currentTransformY = currentTransformY > bounds.maxTranslateY ? bounds.maxTranslateY : 
+                           currentTransformY < -bounds.maxTranslateY ? -bounds.maxTranslateY : 
+                           currentTransformY;
     }
  
     function updateTransform() {
-        constrainMovement();
-        imageContainer.style.transformOrigin = 'center';
-        imageContainer.style.transform = 
-            `scale(${currentScale}) translate(${currentTransformX / currentScale}px, ${currentTransformY / currentScale}px)`;
+        constrainTransform();
+        imageContainer.style.transformOrigin = 'center center';
+        imageContainer.style.transform = `translate(${currentTransformX}px, ${currentTransformY}px) scale(${currentScale})`;
     }
  
     function createProgressCircle(x, y) {
