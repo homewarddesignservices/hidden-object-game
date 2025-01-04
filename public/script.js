@@ -252,13 +252,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (checkAllFound()) return;
     
         const rect = imageContainer.getBoundingClientRect();
+        const containerCenterX = rect.width / 2;
+        const containerCenterY = rect.height / 2;
+        
+        // Get raw click coordinates
         let x = touchX || e.clientX - rect.left;
         let y = touchY || e.clientY - rect.top;
     
-        // Adjust coordinates based on current transform
+        // If zoomed, adjust coordinates relative to center and scale
         if (currentScale > 1) {
-            x = (x - currentTransformX) / currentScale;
-            y = (y - currentTransformY) / currentScale;
+            // Calculate position relative to center
+            const relativeX = x - containerCenterX;
+            const relativeY = y - containerCenterY;
+            
+            // Adjust for scale and transform
+            x = containerCenterX + (relativeX / currentScale) - (currentTransformX / currentScale);
+            y = containerCenterY + (relativeY / currentScale) - (currentTransformY / currentScale);
         }
     
         if (startTimeout) {
