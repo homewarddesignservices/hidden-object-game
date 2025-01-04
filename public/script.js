@@ -40,6 +40,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const feedback = document.getElementById('feedback');
     const gameImage = document.getElementById('game-image');
  
+    // Prevent context menu and image dragging
+    imageContainer.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    });
+ 
+    gameImage.style.webkitTouchCallout = 'none';
+    gameImage.style.webkitUserSelect = 'none';
+    gameImage.draggable = false;
+ 
     function getBoundaries() {
         const rect = imageContainer.getBoundingClientRect();
         const containerWidth = rect.width;
@@ -49,10 +59,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const scaledWidth = containerWidth * currentScale;
         const scaledHeight = containerHeight * currentScale;
         
-        // More aggressive boundary calculation (was divided by 2 before)
-        const maxTranslateX = Math.abs(scaledWidth - containerWidth) / 5;  // More restrictive
-        const maxTranslateY = Math.abs(scaledHeight - containerHeight) / 5;  // More restrictive
-    
+        // Using divisor of 5 for tight boundaries
+        const maxTranslateX = Math.abs(scaledWidth - containerWidth) / 5;
+        const maxTranslateY = Math.abs(scaledHeight - containerHeight) / 5;
+ 
         return {
             maxTranslateX,
             maxTranslateY,

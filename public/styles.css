@@ -36,6 +36,10 @@ body {
     width: 100%;
     height: auto;
     display: block;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .progress-circle {
