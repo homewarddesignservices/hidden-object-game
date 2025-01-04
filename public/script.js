@@ -101,16 +101,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
  
     function createProgressCircle(x, y) {
-        // Create a container for the circle that will transform with the image
-        const circleContainer = document.createElement('div');
-        circleContainer.style.position = 'absolute';
-        circleContainer.style.left = `${x}px`;
-        circleContainer.style.top = `${y}px`;
-        circleContainer.style.transform = `translate(-50%, -50%) scale(${1/currentScale})`;
-        
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         circle.setAttribute('class', 'progress-circle');
         circle.setAttribute('viewBox', '0 0 36 36');
+        circle.style.left = `${x}px`;
+        circle.style.top = `${y}px`;
  
         const backgroundCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         backgroundCircle.setAttribute('class', 'background');
@@ -128,10 +123,9 @@ document.addEventListener('DOMContentLoaded', () => {
  
         circle.appendChild(backgroundCircle);
         circle.appendChild(progressArc);
-        circleContainer.appendChild(circle);
-        imageContainer.appendChild(circleContainer);
+        imageContainer.appendChild(circle);
  
-        return circleContainer;
+        return circle;
     }
  
     function updateProgress(startTime) {
@@ -258,8 +252,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (checkAllFound()) return;
  
         const rect = imageContainer.getBoundingClientRect();
-        const x = touchX || e.clientX - rect.left;
-        const y = touchY || e.clientY - rect.top;
+        
+        // Get raw click coordinates
+        let x = touchX || e.clientX - rect.left;
+        let y = touchY || e.clientY - rect.top;
+ 
+        // If zoomed, adjust coordinates
+        if (currentScale > 1) {
+            // Get coordinates relative to transformed position
+            const transformedX = (x - currentTransformX) / currentScale;
+            const transformedY = (y - currentTransformY) / currentScale;
+            x = transformedX;
+            y = transformedY;
+        }
  
         if (startTimeout) {
             clearTimeout(startTimeout);
