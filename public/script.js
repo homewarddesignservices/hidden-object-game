@@ -49,10 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const scaledWidth = containerWidth * currentScale;
         const scaledHeight = containerHeight * currentScale;
         
-        // Calculate the maximum allowed translation
-        const maxTranslateX = Math.abs(scaledWidth - containerWidth) / 2;
-        const maxTranslateY = Math.abs(scaledHeight - containerHeight) / 2;
- 
+        // More aggressive boundary calculation (was divided by 2 before)
+        const maxTranslateX = Math.abs(scaledWidth - containerWidth) / 1.5;  // More restrictive
+        const maxTranslateY = Math.abs(scaledHeight - containerHeight) / 1.5;  // More restrictive
+    
         return {
             maxTranslateX,
             maxTranslateY,
