@@ -260,13 +260,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let circleY = clickY;
     
         if (currentScale > 1) {
-            // Modify the transformation calculation
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            
-            // Calculate position relative to center, then adjust for scale and transform
-            circleX = ((clickX - centerX) / currentScale) + centerX - (currentTransformX / currentScale);
-            circleY = ((clickY - centerY) / currentScale) + centerY - (currentTransformY / currentScale);
+            // Simpler transformation that doesn't multiply by scale
+            circleX = clickX - currentTransformX;
+            circleY = clickY - currentTransformY;
         }
     
         if (startTimeout) {
