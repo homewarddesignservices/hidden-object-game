@@ -106,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
         circle.setAttribute('viewBox', '0 0 36 36');
         circle.style.left = `${x}px`;
         circle.style.top = `${y}px`;
+        circle.style.transform = imageContainer.style.transform;
  
         const backgroundCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         backgroundCircle.setAttribute('class', 'background');
@@ -250,29 +251,19 @@ document.addEventListener('DOMContentLoaded', () => {
  
     function handleStart(e, touchX, touchY) {
         if (checkAllFound()) return;
-    
+ 
         const rect = imageContainer.getBoundingClientRect();
-        
-        const clickX = touchX || e.clientX - rect.left;
-        const clickY = touchY || e.clientY - rect.top;
-    
-        let circleX = clickX;
-        let circleY = clickY;
-    
-        if (currentScale > 1) {
-            // Apply inverse transform and add a correction factor
-            circleX = (clickX - currentTransformX) / currentScale - (currentScale * 20);
-            circleY = (clickY - currentTransformY) / currentScale - (currentScale * 20);
-        }
-    
+        const x = touchX || e.clientX - rect.left;
+        const y = touchY || e.clientY - rect.top;
+ 
         if (startTimeout) {
             clearTimeout(startTimeout);
         }
-    
+ 
         startTimeout = setTimeout(() => {
             holdStartTime = Date.now();
-            progressCircle = createProgressCircle(circleX, circleY);
-            currentCheckPosition = { x: circleX, y: circleY };
+            progressCircle = createProgressCircle(x, y);
+            currentCheckPosition = { x, y };
             
             holdTimer = setInterval(() => {
                 updateProgress(holdStartTime);
