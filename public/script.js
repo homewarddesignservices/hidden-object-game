@@ -253,21 +253,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
         const rect = imageContainer.getBoundingClientRect();
         
-        // Get raw click coordinates and store them separately from circle position
         const clickX = touchX || e.clientX - rect.left;
         const clickY = touchY || e.clientY - rect.top;
     
-        // Store the actual click position for target checking
-        const checkX = clickX;
-        const checkY = clickY;
-    
-        // Adjust circle position for zoom scale
+        // Compensate for the offset by applying an inverse transformation
         let circleX = clickX;
         let circleY = clickY;
     
         if (currentScale > 1) {
-            circleX = checkX * currentScale + currentTransformX;
-            circleY = checkY * currentScale + currentTransformY;
+            // If we're seeing the circle appear too far right, subtract from X
+            // If we're seeing it appear too far down, subtract from Y
+            circleX = (clickX - currentTransformX) / currentScale;
+            circleY = (clickY - currentTransformY) / currentScale;
         }
     
         if (startTimeout) {
@@ -277,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
         startTimeout = setTimeout(() => {
             holdStartTime = Date.now();
             progressCircle = createProgressCircle(circleX, circleY);
-            currentCheckPosition = { x: checkX, y: checkY };  // Use original click position
+            currentCheckPosition = { x: circleX, y: circleY };
             
             holdTimer = setInterval(() => {
                 updateProgress(holdStartTime);
