@@ -260,9 +260,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let circleY = clickY;
     
         if (currentScale > 1) {
-            // Simpler transformation that doesn't multiply by scale
-            circleX = clickX - currentTransformX;
-            circleY = clickY - currentTransformY;
+            // Take into account the transform origin being top-left
+            const scaleOffsetX = (rect.width * currentScale - rect.width) / 2;
+            const scaleOffsetY = (rect.height * currentScale - rect.height) / 2;
+            
+            circleX = (clickX * currentScale - scaleOffsetX - currentTransformX) / currentScale;
+            circleY = (clickY * currentScale - scaleOffsetY - currentTransformY) / currentScale;
         }
     
         if (startTimeout) {
