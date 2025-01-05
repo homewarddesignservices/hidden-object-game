@@ -261,8 +261,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
         if (currentScale > 1) {
             // Apply inverse transform and add a correction factor
-            circleX = (clickX - currentTransformX) / currentScale + (currentScale * 20);
-            circleY = (clickY - currentTransformY) / currentScale + (currentScale * 20);
+            circleX = (clickX - currentTransformX) / currentScale + (currentScale * 40);
+            circleY = (clickY - currentTransformY) / currentScale + (currentScale * 40);
         }
     
         if (startTimeout) {
