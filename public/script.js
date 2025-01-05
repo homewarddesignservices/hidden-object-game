@@ -104,16 +104,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         circle.setAttribute('class', 'progress-circle');
         circle.setAttribute('viewBox', '0 0 36 36');
-        circle.style.left = `${x}px`;
-        circle.style.top = `${y}px`;
+        
+        // Adjust position based on scale - move up and left when zoomed
+        const adjustedX = x - ((currentScale - 1) * 20);  // Move left
+        const adjustedY = y - ((currentScale - 1) * 20);  // Move up
+        
+        circle.style.left = `${adjustedX}px`;
+        circle.style.top = `${adjustedY}px`;
         circle.style.transform = imageContainer.style.transform;
- 
+    
         const backgroundCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         backgroundCircle.setAttribute('class', 'background');
         backgroundCircle.setAttribute('cx', '18');
         backgroundCircle.setAttribute('cy', '18');
         backgroundCircle.setAttribute('r', '16');
- 
+    
         const progressArc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         progressArc.setAttribute('class', 'progress');
         progressArc.setAttribute('cx', '18');
@@ -121,11 +126,11 @@ document.addEventListener('DOMContentLoaded', () => {
         progressArc.setAttribute('r', '16');
         progressArc.setAttribute('stroke-dasharray', '100.53096491487338');
         progressArc.setAttribute('stroke-dashoffset', '100.53096491487338');
- 
+    
         circle.appendChild(backgroundCircle);
         circle.appendChild(progressArc);
         imageContainer.appendChild(circle);
- 
+    
         return circle;
     }
  
