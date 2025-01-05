@@ -260,12 +260,17 @@ document.addEventListener('DOMContentLoaded', () => {
         let circleY = clickY;
     
         if (currentScale > 1) {
-            // Take into account the transform origin being top-left
-            const scaleOffsetX = (rect.width * currentScale - rect.width) / 2;
-            const scaleOffsetY = (rect.height * currentScale - rect.height) / 2;
+            // Calculate center point
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
             
-            circleX = (clickX * currentScale - scaleOffsetX - currentTransformX) / currentScale;
-            circleY = (clickY * currentScale - scaleOffsetY - currentTransformY) / currentScale;
+            // Calculate distance from center
+            const distanceFromCenterX = clickX - centerX;
+            const distanceFromCenterY = clickY - centerY;
+            
+            // Compensate for center-based zoom offset
+            circleX = clickX - (distanceFromCenterX * (currentScale - 1) / currentScale) - (currentTransformX / currentScale);
+            circleY = clickY - (distanceFromCenterY * (currentScale - 1) / currentScale) - (currentTransformY / currentScale);
         }
     
         if (startTimeout) {
