@@ -250,30 +250,34 @@ document.addEventListener('DOMContentLoaded', () => {
  
     function handleStart(e, touchX, touchY) {
         if (checkAllFound()) return;
- 
+    
         const rect = imageContainer.getBoundingClientRect();
         
-        // Get raw click coordinates
-        let x = touchX || e.clientX - rect.left;
-        let y = touchY || e.clientY - rect.top;
- 
-        // If zoomed, adjust coordinates
+        // Get raw click coordinates and store them separately from circle position
+        const clickX = touchX || e.clientX - rect.left;
+        const clickY = touchY || e.clientY - rect.top;
+    
+        // Store the actual click position for target checking
+        const checkX = clickX;
+        const checkY = clickY;
+    
+        // Adjust circle position for zoom scale
+        let circleX = clickX;
+        let circleY = clickY;
+    
         if (currentScale > 1) {
-            // Get coordinates relative to transformed position
-            const transformedX = (x - currentTransformX) / currentScale;
-            const transformedY = (y - currentTransformY) / currentScale;
-            x = transformedX;
-            y = transformedY;
+            circleX = checkX * currentScale + currentTransformX;
+            circleY = checkY * currentScale + currentTransformY;
         }
- 
+    
         if (startTimeout) {
             clearTimeout(startTimeout);
         }
- 
+    
         startTimeout = setTimeout(() => {
             holdStartTime = Date.now();
-            progressCircle = createProgressCircle(x, y);
-            currentCheckPosition = { x, y };
+            progressCircle = createProgressCircle(circleX, circleY);
+            currentCheckPosition = { x: checkX, y: checkY };  // Use original click position
             
             holdTimer = setInterval(() => {
                 updateProgress(holdStartTime);
