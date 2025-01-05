@@ -256,15 +256,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const clickX = touchX || e.clientX - rect.left;
         const clickY = touchY || e.clientY - rect.top;
     
-        // Compensate for the offset by applying an inverse transformation
         let circleX = clickX;
         let circleY = clickY;
     
         if (currentScale > 1) {
-            // If we're seeing the circle appear too far right, subtract from X
-            // If we're seeing it appear too far down, subtract from Y
-            circleX = (clickX - currentTransformX) / currentScale;
-            circleY = (clickY - currentTransformY) / currentScale;
+            // Modify the transformation calculation
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            // Calculate position relative to center, then adjust for scale and transform
+            circleX = ((clickX - centerX) / currentScale) + centerX - (currentTransformX / currentScale);
+            circleY = ((clickY - centerY) / currentScale) + centerY - (currentTransformY / currentScale);
         }
     
         if (startTimeout) {
