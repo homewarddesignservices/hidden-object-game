@@ -260,17 +260,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let circleY = clickY;
     
         if (currentScale > 1) {
-            // Calculate center point
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            
-            // Calculate distance from center
-            const distanceFromCenterX = clickX - centerX;
-            const distanceFromCenterY = clickY - centerY;
-            
-            // Compensate for center-based zoom offset
-            circleX = clickX - (distanceFromCenterX * (currentScale - 1) / currentScale) - (currentTransformX / currentScale);
-            circleY = clickY - (distanceFromCenterY * (currentScale - 1) / currentScale) - (currentTransformY / currentScale);
+            // Apply inverse transform and add a correction factor
+            circleX = (clickX - currentTransformX) / currentScale + (currentScale * 20);
+            circleY = (clickY - currentTransformY) / currentScale + (currentScale * 20);
         }
     
         if (startTimeout) {
