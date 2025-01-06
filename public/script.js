@@ -51,6 +51,24 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
     });
  
+    function getOriginalCoordinates(clientX, clientY) {
+        const rect = imageContainer.getBoundingClientRect();
+        
+        // Get click position relative to container
+        const relativeX = clientX - rect.left;
+        const relativeY = clientY - rect.top;
+        
+        // Remove current pan
+        const unpannedX = relativeX - currentTransformX;
+        const unpannedY = relativeY - currentTransformY;
+        
+        // Convert back to original coordinate space
+        const originalX = unpannedX / currentScale;
+        const originalY = unpannedY / currentScale;
+        
+        return { x: originalX, y: originalY };
+    }
+ 
     function getBoundaries() {
         const rect = imageContainer.getBoundingClientRect();
         const containerWidth = rect.width;
@@ -104,22 +122,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         circle.setAttribute('class', 'progress-circle');
         circle.setAttribute('viewBox', '0 0 36 36');
-        
-        // Increase offset adjustment
-        const adjustedX = x - ((currentScale - 1) * 140);
-        const adjustedY = y - ((currentScale - 1) * 140);
-        
-        circle.style.left = `${adjustedX}px`;
-        circle.style.top = `${adjustedY}px`;
-        circle.style.transform = imageContainer.style.transform;
-    
-    
+        circle.style.left = `${x}px`;
+        circle.style.top = `${y}px`;
+ 
         const backgroundCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         backgroundCircle.setAttribute('class', 'background');
         backgroundCircle.setAttribute('cx', '18');
         backgroundCircle.setAttribute('cy', '18');
         backgroundCircle.setAttribute('r', '16');
-    
+ 
         const progressArc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         progressArc.setAttribute('class', 'progress');
         progressArc.setAttribute('cx', '18');
@@ -127,11 +138,11 @@ document.addEventListener('DOMContentLoaded', () => {
         progressArc.setAttribute('r', '16');
         progressArc.setAttribute('stroke-dasharray', '100.53096491487338');
         progressArc.setAttribute('stroke-dashoffset', '100.53096491487338');
-    
+ 
         circle.appendChild(backgroundCircle);
         circle.appendChild(progressArc);
         imageContainer.appendChild(circle);
-    
+ 
         return circle;
     }
  
@@ -259,8 +270,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (checkAllFound()) return;
  
         const rect = imageContainer.getBoundingClientRect();
-        const x = touchX || e.clientX - rect.left;
-        const y = touchY || e.clientY - rect.top;
+        const clientX = touchX || e.clientX;
+        const clientY = touchY || e.clientY;
+        
+        // Get coordinates in original space
+        const coords = getOriginalCoordinates(clientX, clientY);
  
         if (startTimeout) {
             clearTimeout(startTimeout);
@@ -268,8 +282,8 @@ document.addEventListener('DOMContentLoaded', () => {
  
         startTimeout = setTimeout(() => {
             holdStartTime = Date.now();
-            progressCircle = createProgressCircle(x, y);
-            currentCheckPosition = { x, y };
+            progressCircle = createProgressCircle(coords.x, coords.y);
+            currentCheckPosition = coords;
             
             holdTimer = setInterval(() => {
                 updateProgress(holdStartTime);
@@ -322,12 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
             lastY = (touch1.clientY + touch2.clientY) / 2;
         } else if (e.touches.length === 1) {
             const touch = e.touches[0];
-            const rect = imageContainer.getBoundingClientRect();
-            const x = touch.clientX - rect.left;
-            const y = touch.clientY - rect.top;
- 
-            // Start the selection circle regardless of zoom level
-            handleStart(e, x, y);
+            handleStart(e, touch.clientX, touch.clientY);
  
             // If zoomed in, also enable dragging
             if (currentScale > 1) {
