@@ -105,13 +105,14 @@ document.addEventListener('DOMContentLoaded', () => {
         circle.setAttribute('class', 'progress-circle');
         circle.setAttribute('viewBox', '0 0 36 36');
         
-        // Adjust position based on scale - move up and left when zoomed
-        const adjustedX = x - ((currentScale - 1) * 20);  // Move left
-        const adjustedY = y - ((currentScale - 1) * 20);  // Move up
+        // Increase offset adjustment
+        const adjustedX = x - ((currentScale - 1) * 40);
+        const adjustedY = y - ((currentScale - 1) * 40);
         
         circle.style.left = `${adjustedX}px`;
         circle.style.top = `${adjustedY}px`;
         circle.style.transform = imageContainer.style.transform;
+    
     
         const backgroundCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         backgroundCircle.setAttribute('class', 'background');
