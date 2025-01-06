@@ -106,8 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
         circle.setAttribute('viewBox', '0 0 36 36');
         
         // Increase offset adjustment
-        const adjustedX = x - ((currentScale - 1) * 100);
-        const adjustedY = y - ((currentScale - 1) * 100);
+        const adjustedX = x - ((currentScale - 1) * 140);
+        const adjustedY = y - ((currentScale - 1) * 140);
         
         circle.style.left = `${adjustedX}px`;
         circle.style.top = `${adjustedY}px`;
