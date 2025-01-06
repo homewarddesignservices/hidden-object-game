@@ -51,26 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
     });
  
-    function getOriginalCoordinates(clientX, clientY) {
-        const rect = imageContainer.getBoundingClientRect();
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-        
-        // Get click position relative to container
-        const relativeX = clientX - rect.left;
-        const relativeY = clientY - rect.top;
-        
-        // Get position relative to center point
-        const fromCenterX = relativeX - centerX;
-        const fromCenterY = relativeY - centerY;
-        
-        // Adjust for current transform and scale from center
-        const adjustedX = centerX + (fromCenterX / currentScale) + (currentTransformX / currentScale);
-        const adjustedY = centerY + (fromCenterY / currentScale) + (currentTransformY / currentScale);
-        
-        return { x: adjustedX, y: adjustedY };
-    }
- 
     function getBoundaries() {
         const rect = imageContainer.getBoundingClientRect();
         const containerWidth = rect.width;
@@ -121,11 +101,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
  
     function createProgressCircle(x, y) {
+        // Create a container that will move with the image
+        const container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.left = `${x}px`;
+        container.style.top = `${y}px`;
+        container.style.transformOrigin = 'center center';
+        
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         circle.setAttribute('class', 'progress-circle');
         circle.setAttribute('viewBox', '0 0 36 36');
-        circle.style.left = `${x}px`;
-        circle.style.top = `${y}px`;
  
         const backgroundCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         backgroundCircle.setAttribute('class', 'background');
@@ -143,9 +128,10 @@ document.addEventListener('DOMContentLoaded', () => {
  
         circle.appendChild(backgroundCircle);
         circle.appendChild(progressArc);
-        imageContainer.appendChild(circle);
+        container.appendChild(circle);
+        imageContainer.appendChild(container);
  
-        return circle;
+        return container;
     }
  
     function updateProgress(startTime) {
@@ -272,11 +258,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (checkAllFound()) return;
  
         const rect = imageContainer.getBoundingClientRect();
-        const clientX = touchX || e.clientX;
-        const clientY = touchY || e.clientY;
-        
-        // Get coordinates in original space
-        const coords = getOriginalCoordinates(clientX, clientY);
+        const x = touchX || e.clientX - rect.left;
+        const y = touchY || e.clientY - rect.top;
  
         if (startTimeout) {
             clearTimeout(startTimeout);
@@ -284,8 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
  
         startTimeout = setTimeout(() => {
             holdStartTime = Date.now();
-            progressCircle = createProgressCircle(coords.x, coords.y);
-            currentCheckPosition = coords;
+            progressCircle = createProgressCircle(x, y);
+            currentCheckPosition = { x, y };
             
             holdTimer = setInterval(() => {
                 updateProgress(holdStartTime);
