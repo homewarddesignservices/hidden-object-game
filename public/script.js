@@ -53,20 +53,22 @@ document.addEventListener('DOMContentLoaded', () => {
  
     function getOriginalCoordinates(clientX, clientY) {
         const rect = imageContainer.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
         
         // Get click position relative to container
         const relativeX = clientX - rect.left;
         const relativeY = clientY - rect.top;
         
-        // Remove current pan
-        const unpannedX = relativeX - currentTransformX;
-        const unpannedY = relativeY - currentTransformY;
+        // Get position relative to center point
+        const fromCenterX = relativeX - centerX;
+        const fromCenterY = relativeY - centerY;
         
-        // Convert back to original coordinate space
-        const originalX = unpannedX / currentScale;
-        const originalY = unpannedY / currentScale;
+        // Adjust for current transform and scale from center
+        const adjustedX = centerX + (fromCenterX / currentScale) + (currentTransformX / currentScale);
+        const adjustedY = centerY + (fromCenterY / currentScale) + (currentTransformY / currentScale);
         
-        return { x: originalX, y: originalY };
+        return { x: adjustedX, y: adjustedY };
     }
  
     function getBoundaries() {
