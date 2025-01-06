@@ -56,11 +56,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const containerWidth = rect.width;
         const containerHeight = rect.height;
         
-        // Calculate current image dimensions at scale
         const scaledWidth = containerWidth * currentScale;
         const scaledHeight = containerHeight * currentScale;
         
-        // Using divisor of 5 for tight boundaries
         const maxTranslateX = Math.abs(scaledWidth - containerWidth) / 5;
         const maxTranslateY = Math.abs(scaledHeight - containerHeight) / 5;
  
@@ -77,14 +75,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function constrainTransform() {
         const bounds = getBoundaries();
         
-        // If not zoomed, center image
         if (currentScale <= 1) {
             currentTransformX = 0;
             currentTransformY = 0;
             return;
         }
  
-        // Hard constrain the translations
         currentTransformX = currentTransformX > bounds.maxTranslateX ? bounds.maxTranslateX : 
                            currentTransformX < -bounds.maxTranslateX ? -bounds.maxTranslateX : 
                            currentTransformX;
@@ -96,21 +92,15 @@ document.addEventListener('DOMContentLoaded', () => {
  
     function updateTransform() {
         constrainTransform();
-        imageContainer.style.transformOrigin = 'center center';
         imageContainer.style.transform = `translate(${currentTransformX}px, ${currentTransformY}px) scale(${currentScale})`;
     }
  
     function createProgressCircle(x, y) {
-        // Create a container that will move with the image
-        const container = document.createElement('div');
-        container.style.position = 'absolute';
-        container.style.left = `${x}px`;
-        container.style.top = `${y}px`;
-        container.style.transformOrigin = 'center center';
-        
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         circle.setAttribute('class', 'progress-circle');
         circle.setAttribute('viewBox', '0 0 36 36');
+        circle.style.left = `${x}px`;
+        circle.style.top = `${y}px`;
  
         const backgroundCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         backgroundCircle.setAttribute('class', 'background');
@@ -128,10 +118,9 @@ document.addEventListener('DOMContentLoaded', () => {
  
         circle.appendChild(backgroundCircle);
         circle.appendChild(progressArc);
-        container.appendChild(circle);
-        imageContainer.appendChild(container);
+        imageContainer.appendChild(circle);
  
-        return container;
+        return circle;
     }
  
     function updateProgress(startTime) {
